@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { Delete, Edit, View, Picture } from '@element-plus/icons-vue'
 import ChannelSelect from './components/ChannelSelect.vue'
 import ArticleEdit from './components/ArticleEdit.vue'
@@ -23,13 +23,11 @@ const params = ref({
 const previewDialogVisible = ref(false)
 const previewArticle = ref({})
 
-// 计算属性：统计信息
-const statsInfo = computed(() => {
-  const published = articleList.value.filter(
-    (item) => item.state === '已发布'
-  ).length
-  const draft = articleList.value.filter((item) => item.state === '草稿').length
-  return { published, draft, total: articleList.value.length }
+// 全局统计信息
+const globalStats = ref({
+  total: 0,
+  published: 0,
+  draft: 0
 })
 
 // 基于params参数，获取文章列表
@@ -46,7 +44,27 @@ const getArticleList = async () => {
   articleList.value = res.data.data
   total.value = res.data.total
 
+  // 获取全局统计信息（不分页的完整统计）
+  await getGlobalStats()
+
   loading.value = false
+}
+
+// 获取全局统计信息
+const getGlobalStats = async () => {
+  try {
+    // 获取所有文章（不分页）用于统计
+    const statsRes = await artGetListService({ pagenum: 1, pagesize: 9999 })
+    const allArticles = statsRes.data.data
+
+    globalStats.value = {
+      total: statsRes.data.total,
+      published: allArticles.filter((item) => item.state === '已发布').length,
+      draft: allArticles.filter((item) => item.state === '草稿').length
+    }
+  } catch (error) {
+    console.error('获取统计信息失败:', error)
+  }
 }
 getArticleList()
 
@@ -144,12 +162,14 @@ const getStateTagType = (state) => {
       <div class="header-actions">
         <!-- 统计信息 -->
         <div class="stats-info">
-          <el-tag type="info" size="small">总计: {{ total }}</el-tag>
+          <el-tag type="info" size="small"
+            >总计: {{ globalStats.total }}</el-tag
+          >
           <el-tag type="success" size="small"
-            >已发布: {{ statsInfo.published }}</el-tag
+            >已发布: {{ globalStats.published }}</el-tag
           >
           <el-tag type="warning" size="small"
-            >草稿: {{ statsInfo.draft }}</el-tag
+            >草稿: {{ globalStats.draft }}</el-tag
           >
         </div>
         <el-button type="primary" @click="onAddArticle">添加文章</el-button>
