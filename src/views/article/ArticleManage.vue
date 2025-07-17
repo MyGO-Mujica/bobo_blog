@@ -141,18 +141,185 @@ const onPreviewArticle = (row) => {
   previewDialogVisible.value = true
 }
 
-// 获取文章内容预览（截取前100字符）
+// 获取文章内容预览（支持Editor.js JSON格式）
 const getContentPreview = (content) => {
   if (!content) return '暂无内容'
-  const textContent = content.replace(/<[^>]*>/g, '') // 去除HTML标签
-  return textContent.length > 50
-    ? textContent.substring(0, 50) + '...'
-    : textContent
+
+  try {
+    // 尝试解析 Editor.js JSON 格式
+    const editorData = JSON.parse(content)
+    if (editorData.blocks && Array.isArray(editorData.blocks)) {
+      const textBlocks = editorData.blocks
+        .filter(
+          (block) =>
+            block.type === 'paragraph' ||
+            block.type === 'header' ||
+            block.type === 'list' ||
+            block.type === 'quote'
+        )
+        .map((block) => {
+          if (block.type === 'list') {
+            // 处理列表项
+            const listItems = block.data.items
+              .map((item) => {
+                if (typeof item === 'object' && item.content) {
+                  return item.content
+                } else if (typeof item === 'string') {
+                  return item
+                }
+                return ''
+              })
+              .join(' ')
+            return listItems
+          }
+          return block.data.text || ''
+        })
+        .join(' ')
+
+      if (textBlocks) {
+        const cleanText = textBlocks.replace(/<[^>]*>/g, '') // 去除HTML标签
+        return cleanText.length > 50
+          ? cleanText.substring(0, 50) + '...'
+          : cleanText
+      }
+    }
+  } catch (e) {
+    // 如果不是JSON格式，按原HTML处理
+    const textContent = content.replace(/<[^>]*>/g, '')
+    return textContent.length > 50
+      ? textContent.substring(0, 50) + '...'
+      : textContent
+  }
+
+  return '暂无内容'
 }
 
 // 获取状态标签类型
 const getStateTagType = (state) => {
   return state === '已发布' ? 'success' : 'warning'
+}
+
+// 将Editor.js JSON格式转换为HTML用于预览
+const renderEditorContent = (content) => {
+  if (!content) return '<p>暂无内容</p>'
+
+  try {
+    const editorData = JSON.parse(content)
+    if (!editorData.blocks || !Array.isArray(editorData.blocks)) {
+      return '<p>内容格式错误</p>'
+    }
+
+    return editorData.blocks
+      .map((block) => {
+        switch (block.type) {
+          case 'paragraph': {
+            return `<p>${block.data.text || ''}</p>`
+          }
+          case 'header': {
+            const level = block.data.level || 2
+            return `<h${level}>${block.data.text || ''}</h${level}>`
+          }
+
+          case 'checklist': {
+            const items = block.data.items
+              .map(
+                (item) =>
+                  `<div class="checklist-item">
+                    <input type="checkbox" ${
+                      item.checked ? 'checked' : ''
+                    } disabled>
+                    <span>${item.text}</span>
+                  </div>`
+              )
+              .join('')
+            return `<div class="checklist">${items}</div>`
+          }
+          case 'quote': {
+            return `<blockquote><p>${block.data.text || ''}</p><cite>${
+              block.data.caption || ''
+            }</cite></blockquote>`
+          }
+          case 'warning': {
+            return `<div class="warning-block">
+              <div class="warning-title">${block.data.title || '警告'}</div>
+              <div class="warning-message">${block.data.message || ''}</div>
+            </div>`
+          }
+          case 'code': {
+            return `<pre><code>${block.data.code || ''}</code></pre>`
+          }
+          case 'table': {
+            if (!block.data.content || !block.data.content.length) return ''
+            const hasHeadings = block.data.withHeadings
+            let tableHtml = '<table class="editor-table">'
+
+            if (hasHeadings && block.data.content[0]) {
+              tableHtml += '<thead><tr>'
+              block.data.content[0].forEach((cell) => {
+                tableHtml += `<th>${cell || ''}</th>`
+              })
+              tableHtml += '</tr></thead>'
+            }
+
+            tableHtml += '<tbody>'
+            const startIndex = hasHeadings ? 1 : 0
+            for (let i = startIndex; i < block.data.content.length; i++) {
+              tableHtml += '<tr>'
+              block.data.content[i].forEach((cell) => {
+                tableHtml += `<td>${cell || ''}</td>`
+              })
+              tableHtml += '</tr>'
+            }
+            tableHtml += '</tbody></table>'
+            return tableHtml
+          }
+          case 'image': {
+            const caption = block.data.caption
+              ? `<figcaption>${block.data.caption}</figcaption>`
+              : ''
+            const imageUrl = block.data.file?.url || ''
+            const imageAlt = block.data.caption || ''
+            return `<figure><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;" />${caption}</figure>`
+          }
+          case 'simpleImage': {
+            return `<img src="${
+              block.data.url || ''
+            }" alt="" style="max-width: 100%; height: auto;" />`
+          }
+          case 'embed': {
+            return `<div class="embed-container">
+              <iframe src="${block.data.embed || ''}" 
+                      width="${block.data.width || 580}" 
+                      height="${block.data.height || 320}" 
+                      frameborder="0" 
+                      allowfullscreen>
+              </iframe>
+              <p class="embed-caption">${block.data.caption || ''}</p>
+            </div>`
+          }
+          case 'delimiter': {
+            return '<hr>'
+          }
+          case 'linkTool': {
+            const linkUrl = block.data.link
+            const linkText = block.data.meta?.title || block.data.link
+            return `<a href="${linkUrl}" target="_blank" rel="noopener">${linkText}</a>`
+          }
+          case 'raw': {
+            return block.data.html || ''
+          }
+          default: {
+            return `<div class="unknown-block">${JSON.stringify(
+              block.data
+            )}</div>`
+          }
+        }
+      })
+      .join('')
+  } catch (e) {
+    // 如果不是JSON格式，直接返回原内容（可能是HTML）
+    return content
+  }
 }
 </script>
 
@@ -342,7 +509,10 @@ const getStateTagType = (state) => {
           </span>
         </div>
         <el-divider />
-        <div class="preview-article-content" v-html="previewArticle.content" />
+        <div
+          class="preview-article-content"
+          v-html="renderEditorContent(previewArticle.content)"
+        />
       </div>
       <template #footer>
         <el-button @click="previewDialogVisible = false">关闭</el-button>
@@ -455,14 +625,31 @@ const getStateTagType = (state) => {
     // 美化文章内容样式
     :deep(h1),
     :deep(h2),
-    :deep(h3) {
+    :deep(h3),
+    :deep(h4),
+    :deep(h5),
+    :deep(h6) {
       margin: 16px 0 8px;
       color: #333;
+      font-weight: 600;
+    }
+
+    :deep(h1) {
+      font-size: 28px;
+    }
+
+    :deep(h2) {
+      font-size: 24px;
+    }
+
+    :deep(h3) {
+      font-size: 20px;
     }
 
     :deep(p) {
       margin: 8px 0;
       color: #666;
+      line-height: 1.8;
     }
 
     :deep(img) {
@@ -470,13 +657,209 @@ const getStateTagType = (state) => {
       height: auto;
       border-radius: 4px;
       margin: 8px 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    :deep(figure) {
+      margin: 16px 0;
+      text-align: center;
+
+      figcaption {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #999;
+        font-style: italic;
+      }
     }
 
     :deep(code) {
       background: #f0f0f0;
-      padding: 2px 4px;
+      padding: 2px 6px;
       border-radius: 3px;
       font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #e74c3c;
+    }
+
+    :deep(pre) {
+      background: #282c34;
+      color: #abb2bf;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 12px 0;
+      font-family: 'Courier New', monospace;
+      line-height: 1.5;
+
+      code {
+        background: none;
+        padding: 0;
+        color: inherit;
+      }
+    }
+
+    :deep(blockquote) {
+      border-left: 4px solid #3498db;
+      padding: 12px 20px;
+      margin: 16px 0;
+      background: #f8f9fa;
+      border-radius: 0 6px 6px 0;
+
+      p {
+        margin: 0 0 8px;
+        font-style: italic;
+        font-size: 15px;
+      }
+
+      cite {
+        font-size: 12px;
+        color: #777;
+        font-style: normal;
+      }
+    }
+
+    :deep(ul),
+    :deep(ol) {
+      margin: 12px 0;
+      padding-left: 24px;
+
+      li {
+        margin: 4px 0;
+        line-height: 1.6;
+      }
+    }
+
+    :deep(hr) {
+      margin: 24px 0;
+      border: none;
+      height: 1px;
+      background: linear-gradient(to right, transparent, #ddd, transparent);
+    }
+
+    :deep(a) {
+      color: #3498db;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+
+      &:hover {
+        border-bottom-color: #3498db;
+      }
+    }
+
+    :deep(.unknown-block) {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin: 8px 0;
+      font-size: 12px;
+      color: #856404;
+    }
+
+    // Editor.js 新增块类型样式
+    :deep(.checklist) {
+      margin: 12px 0;
+
+      .checklist-item {
+        display: flex;
+        align-items: center;
+        margin: 8px 0;
+        padding: 4px 0;
+
+        input[type='checkbox'] {
+          margin-right: 8px;
+          cursor: default;
+        }
+
+        span {
+          line-height: 1.6;
+          color: #666;
+        }
+      }
+    }
+
+    :deep(.warning-block) {
+      background: #fff7e6;
+      border: 1px solid #ffd591;
+      border-left: 4px solid #fa8c16;
+      border-radius: 6px;
+      padding: 16px;
+      margin: 16px 0;
+
+      .warning-title {
+        font-weight: 600;
+        color: #d46b08;
+        font-size: 14px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+
+        &::before {
+          content: '⚠️';
+          margin-right: 8px;
+        }
+      }
+
+      .warning-message {
+        color: #ad6800;
+        line-height: 1.6;
+      }
+    }
+
+    :deep(.editor-table) {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      background: white;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+      th,
+      td {
+        border: 1px solid #e8e8e8;
+        padding: 12px 16px;
+        text-align: left;
+        line-height: 1.6;
+      }
+
+      th {
+        background: #fafafa;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 2px solid #d9d9d9;
+      }
+
+      td {
+        color: #666;
+      }
+
+      tr:nth-child(even) td {
+        background: #fafafa;
+      }
+
+      tr:hover td {
+        background: #f0f0f0;
+      }
+    }
+
+    :deep(.embed-container) {
+      margin: 20px 0;
+      text-align: center;
+
+      iframe {
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        max-width: 100%;
+      }
+
+      .embed-caption {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #999;
+        font-style: italic;
+      }
     }
   }
 }
