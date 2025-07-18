@@ -34,3 +34,16 @@ export const artEditService = (data) => request.put('/my/article/info', data)
 // 文章：删除文章接口
 export const artDelService = (id) =>
   request.delete('/my/article/info', { params: { id } })
+
+// 文章：搜索文章
+export const artSearchService = (params) =>
+  request.get('/my/article/search', {
+    params
+  })
+
+// 文章：上传图片 (Editor.js 使用)
+export const artUploadImageService = (file) => {
+  const formData = new FormData()
+  formData.append('image', file)
+  return request.post('/my/article/upload/image', formData)
+}
