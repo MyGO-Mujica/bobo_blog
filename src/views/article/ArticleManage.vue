@@ -3,7 +3,11 @@ import { ref } from 'vue'
 import { Delete, Edit, View, Picture } from '@element-plus/icons-vue'
 import ChannelSelect from './components/ChannelSelect.vue'
 import ArticleEdit from './components/ArticleEdit.vue'
-import { artGetListService, artDelService } from '@/api/article.js'
+import {
+  artGetListService,
+  artDelService,
+  artSearchService
+} from '@/api/article.js'
 import { formatRelativeTime } from '@/utils/format.js'
 import { baseURL } from '@/utils/request'
 
@@ -16,7 +20,8 @@ const params = ref({
   pagenum: 1, // 当前页
   pagesize: 5, // 当前生效的每页条数
   cate_id: null,
-  state: ''
+  state: '',
+  keyword: '' // 搜索关键词
 })
 
 // 预览对话框相关
@@ -40,7 +45,18 @@ const getArticleList = async () => {
     queryParams.cate_id = Number(queryParams.cate_id)
   }
 
-  const res = await artGetListService(queryParams)
+  // 根据是否有搜索关键词选择不同的接口
+  let res
+  if (queryParams.keyword && queryParams.keyword.trim()) {
+    // 使用搜索接口
+    res = await artSearchService(queryParams)
+  } else {
+    // 使用普通列表接口，移除 keyword 参数
+    // eslint-disable-next-line no-unused-vars
+    const { keyword, ...listParams } = queryParams
+    res = await artGetListService(listParams)
+  }
+
   articleList.value = res.data.data
   total.value = res.data.total
 
@@ -96,6 +112,7 @@ const onReset = () => {
   params.value.pagenum = 1 // 重置页面
   params.value.cate_id = null
   params.value.state = ''
+  params.value.keyword = '' // 重置搜索关键词
   getArticleList()
 }
 
@@ -126,10 +143,8 @@ const onDeleteArticle = async (row) => {
 // 添加或者编辑 成功的回调
 const onSuccess = (type) => {
   if (type === 'add') {
-    // 如果是添加，最好渲染最后一页
-    const lastPage = Math.ceil((total.value + 1) / params.value.pagesize)
-    // 更新成最大页码数，再渲染
-    params.value.pagenum = lastPage
+    // 如果是添加，跳转到第一页显示最新文章
+    params.value.pagenum = 1
   }
 
   getArticleList()
@@ -141,8 +156,14 @@ const onPreviewArticle = (row) => {
   previewDialogVisible.value = true
 }
 
-// 获取文章内容预览（支持Editor.js JSON格式）
-const getContentPreview = (content) => {
+// 获取文章内容预览（优先使用后端返回的summary）
+const getContentPreview = (content, summary) => {
+  // 优先使用后端返回的智能摘要
+  if (summary && summary.trim()) {
+    return summary.length > 80 ? summary.substring(0, 80) + '...' : summary
+  }
+
+  // 降级方案：客户端解析Editor.js内容
   if (!content) return '暂无内容'
 
   try {
@@ -300,14 +321,6 @@ const renderEditorContent = (content) => {
           case 'delimiter': {
             return '<hr>'
           }
-          case 'linkTool': {
-            const linkUrl = block.data.link
-            const linkText = block.data.meta?.title || block.data.link
-            return `<a href="${linkUrl}" target="_blank" rel="noopener">${linkText}</a>`
-          }
-          case 'raw': {
-            return block.data.html || ''
-          }
           default: {
             return `<div class="unknown-block">${JSON.stringify(
               block.data
@@ -345,6 +358,15 @@ const renderEditorContent = (content) => {
 
     <!-- 表单区域 -->
     <el-form inline>
+      <el-form-item label="搜索关键词:">
+        <el-input
+          v-model="params.keyword"
+          placeholder="搜索文章标题"
+          style="width: 200px"
+          clearable
+          @keyup.enter="onSearch"
+        />
+      </el-form-item>
       <el-form-item label="文章分类:">
         <channel-select v-model="params.cate_id" width="140px"></channel-select>
       </el-form-item>
@@ -404,10 +426,13 @@ const renderEditorContent = (content) => {
               </el-link>
             </div>
             <div class="article-preview">
-              {{ getContentPreview(row.content) }}
+              {{ getContentPreview(row.content, row.summary) }}
             </div>
             <div class="article-meta">
               <el-tag size="small" type="info">{{ row.cate_name }}</el-tag>
+              <span class="word-count" v-if="row.word_count">
+                {{ row.word_count }} 字
+              </span>
               <span class="pub-date">{{
                 formatRelativeTime(row.pub_date)
               }}</span>
@@ -586,6 +611,14 @@ const renderEditorContent = (content) => {
     display: flex;
     align-items: center;
     gap: 12px;
+
+    .word-count {
+      color: #909399;
+      background: #f4f4f5;
+      padding: 0px 5px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
 
     .pub-date {
       color: #999;
