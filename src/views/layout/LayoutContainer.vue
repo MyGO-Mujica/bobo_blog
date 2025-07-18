@@ -1,14 +1,14 @@
 <script setup>
 import {
-  Management,
-  Promotion,
+  Collection,
+  SetUp,
   UserFilled,
   User,
   Crop,
   EditPen,
   SwitchButton,
   CaretBottom,
-  House
+  Orange
 } from '@element-plus/icons-vue'
 import avatar from '@/assets/avatar.png'
 import { useUserStore } from '@/stores'
@@ -62,15 +62,15 @@ const handleCommand = async (key) => {
         router
       >
         <el-menu-item index="/home">
-          <el-icon><House /></el-icon>
+          <el-icon><Orange /></el-icon>
           <span>首页</span>
         </el-menu-item>
         <el-menu-item index="/article/channel">
-          <el-icon><Management /></el-icon>
+          <el-icon><Collection /></el-icon>
           <span>文章分类</span>
         </el-menu-item>
         <el-menu-item index="/article/manage">
-          <el-icon><Promotion /></el-icon>
+          <el-icon><SetUp /></el-icon>
           <span>文章管理</span>
         </el-menu-item>
 
