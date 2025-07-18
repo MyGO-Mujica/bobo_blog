@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { Delete, Edit, View, Picture } from '@element-plus/icons-vue'
+import { Delete, Edit, Reading, Picture } from '@element-plus/icons-vue'
 import ChannelSelect from './components/ChannelSelect.vue'
 import ArticleEdit from './components/ArticleEdit.vue'
 import {
@@ -460,7 +460,8 @@ const renderEditorContent = (content) => {
                 plain
                 size="small"
                 type="info"
-                :icon="View"
+                color="#7DD3FC"
+                :icon="Reading"
                 @click="onPreviewArticle(row)"
               />
             </el-tooltip>
