@@ -11,17 +11,16 @@ import Quote from '@editorjs/quote'
 import Marker from '@editorjs/marker'
 import InlineCode from '@editorjs/inline-code'
 import Delimiter from '@editorjs/delimiter'
-import LinkTool from '@editorjs/link'
 import Table from '@editorjs/table'
 import Embed from '@editorjs/embed'
-import RawTool from '@editorjs/raw'
 import Checklist from '@editorjs/checklist'
 import Warning from '@editorjs/warning'
 import SimpleImage from '@editorjs/simple-image'
 import {
   artPublishService,
   artGetDetailService,
-  artEditService
+  artEditService,
+  artUploadImageService
 } from '@/api/article'
 import { baseURL } from '@/utils/request'
 import axios from 'axios'
@@ -125,17 +124,22 @@ const editorConfig = {
               throw new Error('只支持 JPG、PNG、GIF、WEBP 格式的图片')
             }
 
-            if (file.size > 10 * 1024 * 1024) {
-              throw new Error('图片大小不能超过 10MB')
+            if (file.size > 5 * 1024 * 1024) {
+              throw new Error('图片大小不能超过 5MB')
             }
 
-            // 创建本地预览 URL
-            const imageUrl = URL.createObjectURL(file)
-            return {
-              success: 1,
-              file: {
-                url: imageUrl
+            try {
+              // 使用真正的后端 API 上传图片
+              const response = await artUploadImageService(file)
+              return {
+                success: 1,
+                file: {
+                  url: baseURL + response.data.data.url
+                }
               }
+            } catch (error) {
+              console.error('图片上传失败:', error)
+              throw new Error('图片上传失败，请重试')
             }
           }
         }
@@ -171,18 +175,6 @@ const editorConfig = {
             id: (groups) => groups.join('/embed/')
           }
         }
-      }
-    },
-    linkTool: {
-      class: LinkTool,
-      config: {
-        endpoint: '/api/link' // 如果需要链接预览功能
-      }
-    },
-    raw: {
-      class: RawTool,
-      config: {
-        placeholder: '请输入HTML代码...'
       }
     },
     marker: {
@@ -436,28 +428,6 @@ const updateContentLength = async () => {
                   })
                 }
               })
-            }
-            break
-          }
-          case 'raw': {
-            if (block.data && block.data.html) {
-              // 对于原始HTML，只计算纯文本内容
-              textLength += getTextLength(block.data.html)
-            }
-            break
-          }
-          case 'linkTool': {
-            if (block.data) {
-              // 链接文本
-              if (block.data.meta && block.data.meta.title) {
-                textLength += getTextLength(block.data.meta.title)
-              } else if (block.data.link) {
-                textLength += block.data.link.length
-              }
-              // 链接描述
-              if (block.data.meta && block.data.meta.description) {
-                textLength += getTextLength(block.data.meta.description)
-              }
             }
             break
           }
