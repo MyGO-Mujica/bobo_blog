@@ -1,7 +1,11 @@
 <script setup>
 import { ref } from 'vue'
 import { Edit, Delete } from '@element-plus/icons-vue'
-import { artGetChannelsService, artDelChannelService } from '../../api/article'
+import {
+  artGetChannelsService,
+  artDelChannelService,
+  artGetListService
+} from '../../api/article'
 import ChannelEdit from './components/ChannelEdit.vue'
 import { formatRelativeTime } from '@/utils/format.js'
 const channelList = ref([])
@@ -17,14 +21,46 @@ const getChannelList = async () => {
 getChannelList()
 
 const onDelChannel = async (row) => {
-  await ElMessageBox.confirm('你确认要删除该分类么', '温馨提示', {
+  // 首先检查该分类下是否有文章
+  try {
+    const res = await artGetListService({
+      pagenum: 1,
+      pagesize: 1,
+      cate_id: row.id
+    })
+
+    if (res.data.total > 0) {
+      ElMessageBox.alert(
+        `该分类下还有 ${res.data.total} 篇文章，无法删除。请先删除或移动这些文章到其他分类。`,
+        '无法删除分类',
+        {
+          type: 'warning',
+          confirmButtonText: '知道了'
+        }
+      )
+      return
+    }
+  } catch (error) {
+    console.error('检查分类文章失败:', error)
+    ElMessage.error('检查分类状态失败，请稍后重试')
+    return
+  }
+
+  // 如果没有文章，则可以安全删除
+  await ElMessageBox.confirm('确认要删除该分类吗？', '温馨提示', {
     type: 'warning',
     confirmButtonText: '确认',
     cancelButtonText: '取消'
   })
-  await artDelChannelService(row.id)
-  ElMessage.success('删除成功')
-  getChannelList()
+
+  try {
+    await artDelChannelService(row.id)
+    ElMessage.success('删除成功')
+    getChannelList()
+  } catch (error) {
+    console.error('删除分类失败:', error)
+    ElMessage.error('删除失败，请稍后重试')
+  }
 }
 const onEditChannel = (row) => {
   dialog.value.open(row)
