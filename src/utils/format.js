@@ -26,3 +26,8 @@ export const formatRelativeTime = (time) => {
     return target.format('YYYY年MM月')
   }
 }
+
+// 详细日期格式化（年月日时分）
+export const formatDetailTime = (time) => {
+  return dayjs(time).format('YYYY年MM月DD日 HH:mm')
+}
