@@ -8,8 +8,11 @@ import {
   artDelService,
   artSearchService
 } from '@/api/article.js'
-import { formatRelativeTime } from '@/utils/format.js'
+import { formatRelativeTime, formatDetailTime } from '@/utils/format.js'
 import { baseURL } from '@/utils/request'
+import { useUserStore } from '@/stores'
+
+const userStore = useUserStore()
 
 const articleList = ref([]) // 文章列表
 const total = ref(0) // 总条数
@@ -516,25 +519,40 @@ const renderEditorContent = (content) => {
     <article-edit ref="articleEditRef" @success="onSuccess"></article-edit>
 
     <!-- 文章预览对话框 -->
-    <el-dialog
-      v-model="previewDialogVisible"
-      :title="previewArticle.title"
-      width="70%"
-      center
-    >
+    <el-dialog v-model="previewDialogVisible" title="" width="70%" center>
       <div class="preview-content">
-        <div class="preview-meta">
-          <el-tag type="info" size="small">{{
-            previewArticle.cate_name
-          }}</el-tag>
-          <el-tag :type="getStateTagType(previewArticle.state)" size="small">
-            {{ previewArticle.state }}
-          </el-tag>
-          <span class="preview-date">
-            发布时间: {{ formatRelativeTime(previewArticle.pub_date) }}
-          </span>
+        <!-- 文章标题 - 左对齐 -->
+        <div class="preview-title">
+          {{ previewArticle.title }}
         </div>
+
+        <!-- 发布日期和分类信息 -->
+        <div class="preview-info-row">
+          <div class="preview-date">
+            {{ formatDetailTime(previewArticle.pub_date) }}
+          </div>
+          <div class="preview-meta-tags">
+            <el-tag type="info" size="small">{{
+              previewArticle.cate_name
+            }}</el-tag>
+            <el-tag :type="getStateTagType(previewArticle.state)" size="small">
+              {{ previewArticle.state }}
+            </el-tag>
+          </div>
+        </div>
+
+        <!-- 用户信息 -->
+        <div class="preview-author">
+          <el-avatar :size="40" :src="userStore.user.user_pic" />
+          <span class="author-name">{{
+            userStore.user.nickname || userStore.user.username
+          }}</span>
+        </div>
+
+        <!-- 分隔线 -->
         <el-divider />
+
+        <!-- 文章内容 -->
         <div
           class="preview-article-content"
           v-html="renderEditorContent(previewArticle.content)"
@@ -635,16 +653,46 @@ const renderEditorContent = (content) => {
 }
 
 .preview-content {
-  .preview-meta {
+  .preview-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    text-align: left;
+    margin-bottom: 5px;
+    margin-left: 20px;
+    line-height: 1.4;
+  }
+
+  .preview-info-row {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
+    margin-left: 20px;
 
     .preview-date {
-      color: #666;
-      font-size: 14px;
-      margin-left: auto;
+      color: #8f8c8c;
+      font-size: 12px;
+    }
+
+    .preview-meta-tags {
+      display: flex;
+      gap: 8px;
+    }
+  }
+
+  .preview-author {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    margin-left: 20px;
+    text-align: left;
+
+    .author-name {
+      color: #333;
+      font-size: 16px;
+      font-weight: 500;
     }
   }
 
