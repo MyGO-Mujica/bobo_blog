@@ -41,7 +41,6 @@ const onDelChannel = async (row) => {
       return
     }
   } catch (error) {
-    console.error('检查分类文章失败:', error)
     ElMessage.error('检查分类状态失败，请稍后重试')
     return
   }
@@ -58,7 +57,6 @@ const onDelChannel = async (row) => {
     ElMessage.success('删除成功')
     getChannelList()
   } catch (error) {
-    console.error('删除分类失败:', error)
     ElMessage.error('删除失败，请稍后重试')
   }
 }
