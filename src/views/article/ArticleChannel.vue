@@ -136,7 +136,7 @@ const loadArticleCount = async (channel) => {
 
   loadingCounts.value.add(channel.id)
   try {
-    const countRes = await artGetListService({
+    const res = await artGetListService({
       pagenum: 1,
       pagesize: 1,
       cate_id: channel.id
@@ -145,7 +145,7 @@ const loadArticleCount = async (channel) => {
     // 更新对应分类的文章数量
     const index = allChannels.value.findIndex((c) => c.id === channel.id)
     if (index !== -1) {
-      allChannels.value[index].articleCount = countRes.data.total
+      allChannels.value[index].articleCount = res.data.total
     }
   } catch (error) {
     // 加载失败，设为 undefined
@@ -166,48 +166,52 @@ const loadInitialCounts = async () => {
 
 getChannelList()
 
-const onDelChannel = async (row) => {
-  // 如果已经加载了文章数量，直接使用；否则先加载
-  let articleCount = row.articleCount
-  if (articleCount === null) {
-    try {
-      const res = await artGetListService({
-        pagenum: 1,
-        pagesize: 1,
-        cate_id: row.id
-      })
-      articleCount = res.data.total
-    } catch (error) {
-      ElMessage.error('检查分类状态失败，请稍后重试')
-      return
-    }
+// 获取分类的文章数量（如果未加载则加载）
+const getChannelArticleCount = async (channel) => {
+  if (channel.articleCount !== null) {
+    return channel.articleCount
   }
-
-  if (articleCount > 0) {
-    ElMessageBox.alert(
-      `该分类下还有 ${articleCount} 篇文章，无法删除。请先删除或移动这些文章到其他分类。`,
-      '无法删除分类',
-      {
-        type: 'warning',
-        confirmButtonText: '知道了'
-      }
-    )
-    return
-  }
-
-  // 如果没有文章，则可以安全删除
-  await ElMessageBox.confirm('确认要删除该分类吗？', '温馨提示', {
-    type: 'warning',
-    confirmButtonText: '确认',
-    cancelButtonText: '取消'
-  })
 
   try {
+    const res = await artGetListService({
+      pagenum: 1,
+      pagesize: 1,
+      cate_id: channel.id
+    })
+    return res.data.total
+  } catch (error) {
+    throw new Error('检查分类状态失败，请稍后重试')
+  }
+}
+
+const onDelChannel = async (row) => {
+  try {
+    const articleCount = await getChannelArticleCount(row)
+
+    if (articleCount > 0) {
+      ElMessageBox.alert(
+        `该分类下还有 ${articleCount} 篇文章，无法删除。请先删除或移动这些文章到其他分类。`,
+        '无法删除分类',
+        {
+          type: 'warning',
+          confirmButtonText: '知道了'
+        }
+      )
+      return
+    }
+
+    // 如果没有文章，则可以安全删除
+    await ElMessageBox.confirm('确认要删除该分类吗？', '温馨提示', {
+      type: 'warning',
+      confirmButtonText: '确认',
+      cancelButtonText: '取消'
+    })
+
     await artDelChannelService(row.id)
     ElMessage.success('删除成功')
     getChannelList()
   } catch (error) {
-    ElMessage.error('删除失败，请稍后重试')
+    ElMessage.error(error.message || '删除失败，请稍后重试')
   }
 }
 const onEditChannel = (row) => {
@@ -516,7 +520,7 @@ const onSuccess = () => {
     color: #6c757d;
 
     .count-icon {
-      color: #6c757d; /* 无文章时灰色 */
+      color: #6c757d; /* 无文章时 */
     }
   }
 
@@ -526,7 +530,7 @@ const onSuccess = () => {
     color: #52c252;
 
     .count-icon {
-      color: #52c252; /* 1-4篇文章时浅绿色 */
+      color: #52c252; /* 1-3篇文章时 */
     }
   }
 
@@ -536,7 +540,7 @@ const onSuccess = () => {
     color: #28a745;
 
     .count-icon {
-      color: #28a745; /* 5-15篇文章时绿色 */
+      color: #28a745; /* 4-15篇文章时 */
     }
   }
 
@@ -546,7 +550,7 @@ const onSuccess = () => {
     color: #1b5e20;
 
     .count-icon {
-      color: #1b5e20; /* 15篇以上文章时深绿色 */
+      color: #1b5e20; /* 15篇以上文章时 */
     }
   }
 }
