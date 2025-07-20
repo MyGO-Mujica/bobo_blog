@@ -104,8 +104,8 @@ const clearSort = () => {
 // 获取文章数量标签类型
 const getTagType = (count) => {
   if (count === 0) return 'info'
-  if (count <= 5) return 'warning'
-  if (count <= 20) return 'success'
+  if (count <= 3) return 'warning'
+  if (count <= 15) return 'success'
   return 'danger'
 }
 
@@ -507,6 +507,47 @@ const onSuccess = () => {
   .count-icon {
     font-size: 14px;
     margin-right: 4px;
+  }
+
+  /* 自定义标签颜色 - 覆盖Element Plus默认样式 */
+  &.el-tag--info {
+    background-color: #f4f4f5;
+    border-color: #d3d4d6;
+    color: #6c757d;
+
+    .count-icon {
+      color: #6c757d; /* 无文章时灰色 */
+    }
+  }
+
+  &.el-tag--warning {
+    background-color: #e8f5e8;
+    border-color: #95d895;
+    color: #52c252;
+
+    .count-icon {
+      color: #52c252; /* 1-4篇文章时浅绿色 */
+    }
+  }
+
+  &.el-tag--success {
+    background-color: #d4edda;
+    border-color: #7bc17b;
+    color: #28a745;
+
+    .count-icon {
+      color: #28a745; /* 5-15篇文章时绿色 */
+    }
+  }
+
+  &.el-tag--danger {
+    background-color: #c8e6c9;
+    border-color: #4caf50;
+    color: #1b5e20;
+
+    .count-icon {
+      color: #1b5e20; /* 15篇以上文章时深绿色 */
+    }
   }
 }
 
