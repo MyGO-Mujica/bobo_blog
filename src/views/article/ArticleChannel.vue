@@ -515,13 +515,14 @@ const renderEditorContent = (content) => {
     >
       <el-table-column prop="cate_name" label="分类名称" show-overflow-tooltip>
         <template #default="{ row }">
-          <el-button
-            type="text"
+          <div
+            class="category-name-cell category-name-btn-clickable"
             @click="showCategoryPreview(row)"
-            class="category-name-btn"
           >
-            {{ row.cate_name }}
-          </el-button>
+            <span class="category-name-btn">
+              {{ row.cate_name }}
+            </span>
+          </div>
         </template>
       </el-table-column>
       <el-table-column
@@ -591,14 +592,14 @@ const renderEditorContent = (content) => {
             circle
             plain
             type="primary"
-            @click="onEditChannel(row)"
+            @click.stop="onEditChannel(row)"
           ></el-button>
           <el-button
             :icon="Delete"
             circle
             plain
             type="danger"
-            @click="onDelChannel(row)"
+            @click.stop="onDelChannel(row)"
           ></el-button>
         </template>
       </el-table-column>
@@ -631,7 +632,7 @@ const renderEditorContent = (content) => {
     <!-- 文章预览弹窗 -->
     <el-dialog
       v-model="previewVisible"
-      :title="selectedCategory?.cate_name + ' - 文章列表'"
+      :title="selectedArticle ? '' : selectedCategory?.cate_name"
       width="800px"
       top="5vh"
       @close="closePreview"
@@ -743,14 +744,7 @@ const renderEditorContent = (content) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
   gap: 20px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 16px;
-    align-items: stretch;
-  }
 }
 
 /* 搜索输入框 */
@@ -771,10 +765,6 @@ const renderEditorContent = (content) => {
       border-color: #409eff;
     }
   }
-
-  @media (max-width: 768px) {
-    width: 100%;
-  }
 }
 
 .right-actions {
@@ -782,11 +772,6 @@ const renderEditorContent = (content) => {
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
-
-  @media (max-width: 768px) {
-    gap: 8px;
-    flex-wrap: wrap;
-  }
 }
 
 /* 清除排序按钮 */
@@ -819,10 +804,10 @@ const renderEditorContent = (content) => {
 
   :deep(.el-table__header) {
     th {
-      background-color: #fafafa;
-      color: #606266;
-      font-weight: 500;
-      border-bottom: 1px solid #ebeef5;
+      background: #f8f9fa;
+      color: #495057;
+      font-weight: 600;
+      border-bottom: 2px solid #e9ecef;
     }
   }
 
@@ -936,79 +921,23 @@ const renderEditorContent = (content) => {
   transform: translateX(10px);
 }
 
-/* 空状态 */
-:deep(.el-empty) {
-  .el-empty__description {
-    color: #909399;
-  }
-
-  .el-button {
-    border-radius: 4px;
-  }
+.category-name-cell {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  user-select: none;
+  padding: 0 4px;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .category-table {
-    font-size: 14px;
-  }
-}
-
-/* 分类名称按钮样式 */
 .category-name-btn {
-  color: #409eff;
+  color: #333;
   font-weight: 500;
-  padding: 0;
   border: none;
   background: none;
-
-  &:hover {
-    color: #66b1ff;
-    text-decoration: underline;
-  }
-}
-
-/* 文章预览弹窗样式 */
-.article-preview-dialog {
-  :deep(.el-dialog) {
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  :deep(.el-dialog__header) {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 20px 24px;
-    margin: 0;
-
-    .el-dialog__title {
-      color: white;
-      font-weight: 600;
-    }
-
-    .el-dialog__headerbtn {
-      .el-dialog__close {
-        color: white;
-        font-size: 18px;
-
-        &:hover {
-          color: #f0f0f0;
-        }
-      }
-    }
-  }
-
-  :deep(.el-dialog__body) {
-    padding: 24px;
-    max-height: 70vh;
-    overflow-y: auto;
-  }
-
-  :deep(.el-dialog__footer) {
-    padding: 16px 24px;
-    background: #f8f9fa;
-    border-top: 1px solid #e9ecef;
-  }
+  padding: 0;
 }
 
 .preview-content {
@@ -1327,11 +1256,6 @@ const renderEditorContent = (content) => {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
-
-    @media (max-width: 768px) {
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
   }
 
   .article-card {
@@ -1341,6 +1265,9 @@ const renderEditorContent = (content) => {
     transition: all 0.3s ease;
     cursor: pointer;
     background: white;
+    height: 280x;
+    display: flex;
+    flex-direction: column;
 
     &:hover {
       transform: translateY(-4px);
@@ -1365,7 +1292,11 @@ const renderEditorContent = (content) => {
     }
 
     .card-content {
+      flex: 1 1 0;
       padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
 
       .card-title {
         font-size: 16px;
@@ -1410,13 +1341,13 @@ const renderEditorContent = (content) => {
           font-weight: 500;
 
           &.已发布 {
-            background: #d4edda;
-            color: #155724;
+            background: rgb(240, 249, 235);
+            color: rgb(103, 194, 58, 0.9);
           }
 
           &.草稿 {
-            background: #f8d7da;
-            color: #721c24;
+            background: rgb(253, 246, 236);
+            color: rgb(230, 163, 62);
           }
         }
       }
