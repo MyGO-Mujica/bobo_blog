@@ -201,15 +201,25 @@ const onDelChannel = async (row) => {
     }
 
     // 如果没有文章，则可以安全删除
-    await ElMessageBox.confirm('确认要删除该分类吗？', '温馨提示', {
-      type: 'warning',
-      confirmButtonText: '确认',
-      cancelButtonText: '取消'
-    })
+    try {
+      await ElMessageBox.confirm('确认要删除该分类吗？', '温馨提示', {
+        type: 'warning',
+        confirmButtonText: '确认',
+        cancelButtonText: '取消'
+      })
 
-    await artDelChannelService(row.id)
-    ElMessage.success('删除成功')
-    getChannelList()
+      await artDelChannelService(row.id)
+      ElMessage.success('删除成功')
+      getChannelList()
+    } catch (confirmError) {
+      // 用户点击取消时，ElMessageBox.confirm 会抛出 'cancel' 异常
+      // 这是正常的用户操作，不需要显示错误提示
+      if (confirmError === 'cancel') {
+        return
+      }
+      // 其他错误（如网络错误等）才显示错误提示
+      throw confirmError
+    }
   } catch (error) {
     ElMessage.error(error.message || '删除失败，请稍后重试')
   }
