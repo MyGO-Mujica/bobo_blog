@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { Delete, Edit, Reading, Picture } from '@element-plus/icons-vue'
+import { Delete, Edit, Picture } from '@element-plus/icons-vue'
 import ChannelSelect from './components/ChannelSelect.vue'
 import ArticleEdit from './components/ArticleEdit.vue'
 import {
@@ -418,15 +418,12 @@ const renderEditorContent = (content) => {
       <!-- 文章标题和内容预览 -->
       <el-table-column label="文章信息" min-width="300">
         <template #default="{ row }">
-          <div class="article-info">
+          <div
+            class="article-info article-info-clickable"
+            @click="onPreviewArticle(row)"
+          >
             <div class="article-title">
-              <el-link
-                type="primary"
-                :underline="false"
-                @click="onPreviewArticle(row)"
-              >
-                {{ row.title }}
-              </el-link>
+              <span class="article-title-text">{{ row.title }}</span>
             </div>
             <div class="article-preview">
               {{ getContentPreview(row.content, row.summary) }}
@@ -457,37 +454,23 @@ const renderEditorContent = (content) => {
       <el-table-column label="操作" width="120" align="center" fixed="right">
         <template #default="{ row }">
           <div class="action-buttons">
-            <el-tooltip content="预览" placement="top">
-              <el-button
-                circle
-                plain
-                size="small"
-                type="info"
-                color="#7DD3FC"
-                :icon="Reading"
-                @click="onPreviewArticle(row)"
-              />
-            </el-tooltip>
-            <el-tooltip content="编辑" placement="top">
-              <el-button
-                circle
-                plain
-                size="small"
-                type="primary"
-                :icon="Edit"
-                @click="onEditArticle(row)"
-              />
-            </el-tooltip>
-            <el-tooltip content="删除" placement="top">
-              <el-button
-                circle
-                plain
-                size="small"
-                type="danger"
-                :icon="Delete"
-                @click="onDeleteArticle(row)"
-              />
-            </el-tooltip>
+            <!-- 预览按钮已移除，点击文章信息列即可预览 -->
+            <el-button
+              circle
+              plain
+              size="small"
+              type="primary"
+              :icon="Edit"
+              @click="onEditArticle(row)"
+            />
+            <el-button
+              circle
+              plain
+              size="small"
+              type="danger"
+              :icon="Delete"
+              @click="onDeleteArticle(row)"
+            />
           </div>
         </template>
       </el-table-column>
@@ -519,7 +502,13 @@ const renderEditorContent = (content) => {
     <article-edit ref="articleEditRef" @success="onSuccess"></article-edit>
 
     <!-- 文章预览对话框 -->
-    <el-dialog v-model="previewDialogVisible" title="" width="70%" center>
+    <el-dialog
+      v-model="previewDialogVisible"
+      title=""
+      width="55%"
+      center
+      :style="{ top: '-10vh' }"
+    >
       <div class="preview-content">
         <!-- 文章标题 - 左对齐 -->
         <div class="preview-title">
@@ -559,7 +548,11 @@ const renderEditorContent = (content) => {
         />
       </div>
       <template #footer>
-        <el-button @click="previewDialogVisible = false">关闭</el-button>
+        <span class="dialog-footer">
+          <el-button @click="previewDialogVisible = false" size="small"
+            >关闭</el-button
+          >
+        </span>
       </template>
     </el-dialog>
   </page-container>
@@ -603,8 +596,9 @@ const renderEditorContent = (content) => {
 
 .article-info {
   .article-title {
-    font-weight: 500;
-    font-size: 16px;
+    font-weight: 700;
+    font-size: 15px;
+    color: #333;
     margin-bottom: 8px;
 
     .el-link {
@@ -618,7 +612,7 @@ const renderEditorContent = (content) => {
 
   .article-preview {
     color: #666;
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.4;
     margin-bottom: 8px;
     overflow: hidden;
@@ -644,6 +638,10 @@ const renderEditorContent = (content) => {
       font-size: 12px;
     }
   }
+}
+
+.article-info-clickable:hover {
+  cursor: pointer;
 }
 
 .action-buttons {
@@ -977,5 +975,12 @@ const renderEditorContent = (content) => {
   .el-pagination__jump {
     color: #666;
   }
+}
+
+// 对话框 footer 样式
+:deep(.el-dialog__footer) {
+  padding: 16px 20px;
+  border-top: 1px solid #e9ecef;
+  text-align: right;
 }
 </style>
