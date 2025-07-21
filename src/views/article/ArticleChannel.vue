@@ -5,16 +5,22 @@ import {
   Delete,
   Document,
   DocumentDelete,
-  Plus
+  Plus,
+  ArrowLeft
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   artGetChannelsService,
   artDelChannelService,
-  artGetListService
+  artGetListService,
+  artGetDetailService
 } from '../../api/article'
 import ChannelEdit from './components/ChannelEdit.vue'
-import { formatRelativeTime } from '@/utils/format.js'
+import { formatRelativeTime, formatDetailTime } from '@/utils/format.js'
+import { baseURL } from '@/utils/request'
+import { useUserStore } from '@/stores'
+
+const userStore = useUserStore()
 
 const allChannels = ref([]) // 存储所有分类数据
 const loading = ref(false)
@@ -22,6 +28,13 @@ const loadingCounts = ref(new Set()) // 正在加载文章数量的分类ID
 const dialog = ref()
 const searchKeyword = ref('') // 搜索关键词
 const debouncedSearchKeyword = ref('') // 防抖后的搜索关键词
+
+// 文章预览相关状态
+const previewVisible = ref(false)
+const previewLoading = ref(false)
+const selectedCategory = ref(null)
+const categoryArticles = ref([])
+const selectedArticle = ref(null)
 
 // 排序相关状态
 const sortField = ref('')
@@ -233,6 +246,223 @@ const onAddChannel = () => {
 const onSuccess = () => {
   getChannelList()
 }
+
+// 显示分类文章预览
+const showCategoryPreview = async (category) => {
+  selectedCategory.value = category
+  previewVisible.value = true
+  previewLoading.value = true
+
+  try {
+    const res = await artGetListService({
+      pagenum: 1,
+      pagesize: 10, // 最多显示10篇文章
+      cate_id: category.id
+    })
+    categoryArticles.value = res.data.data || []
+  } catch (error) {
+    ElMessage.error('获取分类文章失败')
+    categoryArticles.value = []
+  } finally {
+    previewLoading.value = false
+  }
+}
+
+// 显示文章详情预览
+const showArticlePreview = async (article) => {
+  previewLoading.value = true
+
+  try {
+    const res = await artGetDetailService(article.id)
+    selectedArticle.value = res.data.data
+  } catch (error) {
+    ElMessage.error('获取文章详情失败')
+    selectedArticle.value = null
+  } finally {
+    previewLoading.value = false
+  }
+}
+
+// 关闭预览
+const closePreview = () => {
+  previewVisible.value = false
+  selectedCategory.value = null
+  selectedArticle.value = null
+  categoryArticles.value = []
+}
+
+// 获取文章内容预览（优先使用后端返回的summary）
+const getContentPreview = (content, summary) => {
+  // 优先使用后端返回的智能摘要
+  if (summary && summary.trim()) {
+    return summary.length > 80 ? summary.substring(0, 80) + '...' : summary
+  }
+
+  // 降级方案：客户端解析Editor.js内容
+  if (!content) return '暂无内容'
+
+  try {
+    // 尝试解析 Editor.js JSON 格式
+    const editorData = JSON.parse(content)
+    if (editorData.blocks && Array.isArray(editorData.blocks)) {
+      const textBlocks = editorData.blocks
+        .filter(
+          (block) =>
+            block.type === 'paragraph' ||
+            block.type === 'header' ||
+            block.type === 'list' ||
+            block.type === 'quote'
+        )
+        .map((block) => {
+          if (block.type === 'list') {
+            // 处理列表项
+            const listItems = block.data.items
+              .map((item) => {
+                if (typeof item === 'object' && item.content) {
+                  return item.content
+                } else if (typeof item === 'string') {
+                  return item
+                }
+                return ''
+              })
+              .join(' ')
+            return listItems
+          }
+          return block.data.text || ''
+        })
+        .join(' ')
+
+      if (textBlocks) {
+        const cleanText = textBlocks.replace(/<[^>]*>/g, '') // 去除HTML标签
+        return cleanText.length > 50
+          ? cleanText.substring(0, 50) + '...'
+          : cleanText
+      }
+    }
+  } catch (e) {
+    // 如果不是JSON格式，按原HTML处理
+    const textContent = content.replace(/<[^>]*>/g, '')
+    return textContent.length > 50
+      ? textContent.substring(0, 50) + '...'
+      : textContent
+  }
+
+  return '暂无内容'
+}
+
+// 将Editor.js JSON格式转换为HTML用于预览
+const renderEditorContent = (content) => {
+  if (!content) return '<p>暂无内容</p>'
+
+  try {
+    const editorData = JSON.parse(content)
+    if (!editorData.blocks || !Array.isArray(editorData.blocks)) {
+      return '<p>内容格式错误</p>'
+    }
+
+    return editorData.blocks
+      .map((block) => {
+        switch (block.type) {
+          case 'paragraph': {
+            return `<p>${block.data.text || ''}</p>`
+          }
+          case 'header': {
+            const level = block.data.level || 2
+            return `<h${level}>${block.data.text || ''}</h${level}>`
+          }
+          case 'checklist': {
+            const items = block.data.items
+              .map(
+                (item) =>
+                  `<div class="checklist-item">
+                    <input type="checkbox" ${
+                      item.checked ? 'checked' : ''
+                    } disabled>
+                    <span>${item.text}</span>
+                  </div>`
+              )
+              .join('')
+            return `<div class="checklist">${items}</div>`
+          }
+          case 'quote': {
+            return `<blockquote><p>${block.data.text || ''}</p><cite>${
+              block.data.caption || ''
+            }</cite></blockquote>`
+          }
+          case 'warning': {
+            return `<div class="warning-block">
+              <div class="warning-title">${block.data.title || '警告'}</div>
+              <div class="warning-message">${block.data.message || ''}</div>
+            </div>`
+          }
+          case 'code': {
+            return `<pre><code>${block.data.code || ''}</code></pre>`
+          }
+          case 'table': {
+            if (!block.data.content || !block.data.content.length) return ''
+            const hasHeadings = block.data.withHeadings
+            let tableHtml = '<table class="editor-table">'
+
+            if (hasHeadings && block.data.content[0]) {
+              tableHtml += '<thead><tr>'
+              block.data.content[0].forEach((cell) => {
+                tableHtml += `<th>${cell || ''}</th>`
+              })
+              tableHtml += '</tr></thead>'
+            }
+
+            tableHtml += '<tbody>'
+            const startIndex = hasHeadings ? 1 : 0
+            for (let i = startIndex; i < block.data.content.length; i++) {
+              tableHtml += '<tr>'
+              block.data.content[i].forEach((cell) => {
+                tableHtml += `<td>${cell || ''}</td>`
+              })
+              tableHtml += '</tr>'
+            }
+            tableHtml += '</tbody></table>'
+            return tableHtml
+          }
+          case 'image': {
+            const caption = block.data.caption
+              ? `<figcaption>${block.data.caption}</figcaption>`
+              : ''
+            const imageUrl = block.data.file?.url || ''
+            const imageAlt = block.data.caption || ''
+            return `<figure><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;" />${caption}</figure>`
+          }
+          case 'simpleImage': {
+            return `<img src="${
+              block.data.url || ''
+            }" alt="" style="max-width: 100%; height: auto;" />`
+          }
+          case 'embed': {
+            return `<div class="embed-container">
+              <iframe src="${block.data.embed || ''}" 
+                      width="${block.data.width || 580}" 
+                      height="${block.data.height || 320}" 
+                      frameborder="0" 
+                      allowfullscreen>
+              </iframe>
+              <p class="embed-caption">${block.data.caption || ''}</p>
+            </div>`
+          }
+          case 'delimiter': {
+            return '<hr>'
+          }
+          default: {
+            return `<div class="unknown-block">${JSON.stringify(
+              block.data
+            )}</div>`
+          }
+        }
+      })
+      .join('')
+  } catch (e) {
+    // 如果不是JSON格式，直接返回原内容（可能是HTML）
+    return content
+  }
+}
 </script>
 
 <template>
@@ -283,11 +513,17 @@ const onSuccess = () => {
       class="category-table"
       stripe
     >
-      <el-table-column
-        prop="cate_name"
-        label="分类名称"
-        show-overflow-tooltip
-      ></el-table-column>
+      <el-table-column prop="cate_name" label="分类名称" show-overflow-tooltip>
+        <template #default="{ row }">
+          <el-button
+            type="text"
+            @click="showCategoryPreview(row)"
+            class="category-name-btn"
+          >
+            {{ row.cate_name }}
+          </el-button>
+        </template>
+      </el-table-column>
       <el-table-column
         prop="articleCount"
         label="文章数量"
@@ -391,6 +627,113 @@ const onSuccess = () => {
     </el-table>
 
     <channel-edit ref="dialog" @success="onSuccess"></channel-edit>
+
+    <!-- 文章预览弹窗 -->
+    <el-dialog
+      v-model="previewVisible"
+      :title="selectedCategory?.cate_name + ' - 文章列表'"
+      width="800px"
+      top="5vh"
+      @close="closePreview"
+      class="article-preview-dialog"
+    >
+      <div v-loading="previewLoading" class="preview-content">
+        <!-- 文章详情预览 -->
+        <div v-if="selectedArticle" class="article-detail-preview">
+          <!-- 文章标题 - 左对齐 -->
+          <div class="preview-title">
+            {{ selectedArticle.title }}
+          </div>
+
+          <!-- 发布日期和分类信息 -->
+          <div class="preview-info-row">
+            <div class="preview-date">
+              {{ formatDetailTime(selectedArticle.pub_date) }}
+            </div>
+            <div class="preview-meta-tags">
+              <el-tag type="info" size="small">{{
+                selectedArticle.cate_name
+              }}</el-tag>
+              <el-tag
+                :type="
+                  selectedArticle.state === '已发布' ? 'success' : 'warning'
+                "
+                size="small"
+              >
+                {{ selectedArticle.state }}
+              </el-tag>
+            </div>
+          </div>
+
+          <!-- 用户信息 -->
+          <div class="preview-author">
+            <el-avatar :size="40" :src="userStore.user.user_pic" />
+            <span class="author-name">{{
+              userStore.user.nickname || userStore.user.username
+            }}</span>
+          </div>
+
+          <!-- 分隔线 -->
+          <el-divider />
+
+          <!-- 文章内容 -->
+          <div
+            class="preview-article-content"
+            v-html="renderEditorContent(selectedArticle.content)"
+          />
+
+          <div class="article-actions">
+            <el-button @click="selectedArticle = null" size="small">
+              <el-icon><ArrowLeft /></el-icon>
+              返回列表
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 文章列表预览 -->
+        <div v-else class="articles-list-preview">
+          <div
+            v-if="categoryArticles.length === 0 && !previewLoading"
+            class="empty-state"
+          >
+            <el-empty description="该分类下暂无文章" :image-size="80" />
+          </div>
+
+          <div v-else class="articles-grid">
+            <div
+              v-for="article in categoryArticles"
+              :key="article.id"
+              class="article-card"
+              @click="showArticlePreview(article)"
+            >
+              <div class="card-cover" v-if="article.cover_img">
+                <img :src="baseURL + article.cover_img" alt="文章封面" />
+              </div>
+              <div class="card-content">
+                <h3 class="card-title">{{ article.title }}</h3>
+                <p class="card-summary">
+                  {{ getContentPreview(article.content, article.summary) }}
+                </p>
+                <div class="card-meta">
+                  <span class="publish-time">
+                    {{ formatRelativeTime(article.pub_date) }}
+                  </span>
+                  <span class="article-state" :class="article.state">
+                    {{ article.state === '已发布' ? '已发布' : '草稿' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="closePreview" size="small">关闭</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </page-container>
 </template>
 
@@ -608,6 +951,476 @@ const onSuccess = () => {
 @media (max-width: 768px) {
   .category-table {
     font-size: 14px;
+  }
+}
+
+/* 分类名称按钮样式 */
+.category-name-btn {
+  color: #409eff;
+  font-weight: 500;
+  padding: 0;
+  border: none;
+  background: none;
+
+  &:hover {
+    color: #66b1ff;
+    text-decoration: underline;
+  }
+}
+
+/* 文章预览弹窗样式 */
+.article-preview-dialog {
+  :deep(.el-dialog) {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  :deep(.el-dialog__header) {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 24px;
+    margin: 0;
+
+    .el-dialog__title {
+      color: white;
+      font-weight: 600;
+    }
+
+    .el-dialog__headerbtn {
+      .el-dialog__close {
+        color: white;
+        font-size: 18px;
+
+        &:hover {
+          color: #f0f0f0;
+        }
+      }
+    }
+  }
+
+  :deep(.el-dialog__body) {
+    padding: 24px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  :deep(.el-dialog__footer) {
+    padding: 16px 24px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+  }
+}
+
+.preview-content {
+  min-height: 200px;
+}
+
+/* 文章详情预览样式 */
+.article-detail-preview {
+  .preview-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    text-align: left;
+    margin-bottom: 5px;
+    margin-left: 20px;
+    line-height: 1.4;
+  }
+
+  .preview-info-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    margin-left: 20px;
+
+    .preview-date {
+      color: #8f8c8c;
+      font-size: 12px;
+    }
+
+    .preview-meta-tags {
+      display: flex;
+      gap: 8px;
+    }
+  }
+
+  .preview-author {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    margin-left: 20px;
+    text-align: left;
+
+    .author-name {
+      color: #333;
+      font-size: 16px;
+      font-weight: 500;
+    }
+  }
+
+  .preview-article-content {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 16px;
+    background: #fafafa;
+    border-radius: 6px;
+    line-height: 1.6;
+
+    // 美化文章内容样式
+    :deep(h1),
+    :deep(h2),
+    :deep(h3),
+    :deep(h4),
+    :deep(h5),
+    :deep(h6) {
+      margin: 16px 0 8px;
+      color: #333;
+      font-weight: 600;
+    }
+
+    :deep(h1) {
+      font-size: 28px;
+    }
+
+    :deep(h2) {
+      font-size: 24px;
+    }
+
+    :deep(h3) {
+      font-size: 20px;
+    }
+
+    :deep(p) {
+      margin: 8px 0;
+      color: #666;
+      line-height: 1.8;
+    }
+
+    :deep(img) {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      margin: 8px 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    :deep(figure) {
+      margin: 16px 0;
+      text-align: center;
+
+      figcaption {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #999;
+        font-style: italic;
+      }
+    }
+
+    :deep(code) {
+      background: #f0f0f0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #e74c3c;
+    }
+
+    :deep(pre) {
+      background: #282c34;
+      color: #abb2bf;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 12px 0;
+      font-family: 'Courier New', monospace;
+      line-height: 1.5;
+
+      code {
+        background: none;
+        padding: 0;
+        color: inherit;
+      }
+    }
+
+    :deep(blockquote) {
+      border-left: 4px solid #3498db;
+      padding: 12px 20px;
+      margin: 16px 0;
+      background: #f8f9fa;
+      border-radius: 0 6px 6px 0;
+
+      p {
+        margin: 0 0 8px;
+        font-style: italic;
+        font-size: 15px;
+      }
+
+      cite {
+        font-size: 12px;
+        color: #777;
+        font-style: normal;
+      }
+    }
+
+    :deep(ul),
+    :deep(ol) {
+      margin: 12px 0;
+      padding-left: 24px;
+
+      li {
+        margin: 4px 0;
+        line-height: 1.6;
+      }
+    }
+
+    :deep(hr) {
+      margin: 24px 0;
+      border: none;
+      height: 1px;
+      background: linear-gradient(to right, transparent, #ddd, transparent);
+    }
+
+    :deep(a) {
+      color: #3498db;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+
+      &:hover {
+        border-bottom-color: #3498db;
+      }
+    }
+
+    :deep(.unknown-block) {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin: 8px 0;
+      font-size: 12px;
+      color: #856404;
+    }
+
+    // Editor.js 新增块类型样式
+    :deep(.checklist) {
+      margin: 12px 0;
+
+      .checklist-item {
+        display: flex;
+        align-items: center;
+        margin: 8px 0;
+        padding: 4px 0;
+
+        input[type='checkbox'] {
+          margin-right: 8px;
+          cursor: default;
+        }
+
+        span {
+          line-height: 1.6;
+          color: #666;
+        }
+      }
+    }
+
+    :deep(.warning-block) {
+      background: #fff7e6;
+      border: 1px solid #ffd591;
+      border-left: 4px solid #fa8c16;
+      border-radius: 6px;
+      padding: 16px;
+      margin: 16px 0;
+
+      .warning-title {
+        font-weight: 600;
+        color: #d46b08;
+        font-size: 14px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+
+        &::before {
+          content: '⚠️';
+          margin-right: 8px;
+        }
+      }
+
+      .warning-message {
+        color: #ad6800;
+        line-height: 1.6;
+      }
+    }
+
+    :deep(.editor-table) {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      background: white;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+      th,
+      td {
+        border: 1px solid #e8e8e8;
+        padding: 12px 16px;
+        text-align: left;
+        line-height: 1.6;
+      }
+
+      th {
+        background: #fafafa;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 2px solid #d9d9d9;
+      }
+
+      td {
+        color: #666;
+      }
+
+      tr:nth-child(even) td {
+        background: #fafafa;
+      }
+
+      tr:hover td {
+        background: #f0f0f0;
+      }
+    }
+
+    :deep(.embed-container) {
+      margin: 20px 0;
+      text-align: center;
+
+      iframe {
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        max-width: 100%;
+      }
+
+      .embed-caption {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #999;
+        font-style: italic;
+      }
+    }
+  }
+
+  .article-actions {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #e9ecef;
+  }
+}
+
+/* 文章列表预览样式 */
+.articles-list-preview {
+  .empty-state {
+    text-align: center;
+    padding: 40px 0;
+  }
+
+  .articles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+  }
+
+  .article-card {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background: white;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      border-color: #409eff;
+    }
+
+    .card-cover {
+      height: 160px;
+      overflow: hidden;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+      }
+
+      &:hover img {
+        transform: scale(1.05);
+      }
+    }
+
+    .card-content {
+      padding: 16px;
+
+      .card-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0 0 12px 0;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .card-summary {
+        font-size: 14px;
+        color: #6c757d;
+        line-height: 1.5;
+        margin: 0 0 12px 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .card-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+
+        .publish-time {
+          font-size: 12px;
+          color: #6c757d;
+        }
+
+        .article-state {
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 500;
+
+          &.已发布 {
+            background: #d4edda;
+            color: #155724;
+          }
+
+          &.草稿 {
+            background: #f8d7da;
+            color: #721c24;
+          }
+        }
+      }
+    }
   }
 }
 </style>
