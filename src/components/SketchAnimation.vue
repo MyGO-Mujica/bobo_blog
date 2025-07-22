@@ -206,7 +206,7 @@ const startSketchAnimation = () => {
   drawnIndex = 0
   isAnimating = true
 
-  const linesPerFrame = 10 // 每帧绘制10条线
+  const linesPerFrame = 12 // 每帧绘制12条线
 
   const drawNext = () => {
     if (!isAnimating) return
@@ -230,16 +230,16 @@ const startSketchAnimation = () => {
       drawnIndex++
     }
 
-    // 继续下一帧，减少延迟
+    // 继续下一帧
     if (drawnIndex < edgeLines.length) {
       setTimeout(() => {
         requestAnimationFrame(drawNext)
-      }, 250) // 250ms延迟
+      }, 280) // 280ms延迟
     } else {
       // 线稿绘制完成，开始颜色渐现
       setTimeout(() => {
         startColorAnimation()
-      }, 800) // 减少等待时间
+      }, 800) // 等待时间
     }
   }
 
