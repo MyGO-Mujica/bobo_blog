@@ -133,7 +133,7 @@ const handleCommand = async (key) => {
       <el-main>
         <router-view></router-view>
       </el-main>
-      <el-footer>It's MyGO!!!!!</el-footer>
+      <el-footer>奇迹与魔法，都是存在的</el-footer>
     </el-container>
   </el-container>
 </template>
@@ -202,7 +202,7 @@ const handleCommand = async (key) => {
     font-size: 18px;
     height: 40px;
     color: #4d4c4c;
-    font-family: 'Pacifico', cursive, sans-serif;
+    font-family: 'ZCOOL XiaoWei', cursive, sans-serif;
     letter-spacing: 2px;
   }
 }
