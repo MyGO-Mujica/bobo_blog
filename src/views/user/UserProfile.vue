@@ -52,7 +52,13 @@ const submitForm = async () => {
 <template>
   <page-container title="基本资料">
     <!-- 表单部分 -->
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+    <el-form
+      ref="formRef"
+      :model="form"
+      :rules="rules"
+      style="max-width: 500px"
+      label-width="100px"
+    >
       <el-form-item label="登录名称">
         <el-input v-model="form.username" disabled></el-input>
       </el-form-item>

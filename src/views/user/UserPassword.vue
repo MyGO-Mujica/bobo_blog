@@ -74,6 +74,7 @@ const resetForm = () => {
           ref="formRef"
           :model="pwdForm"
           :rules="rules"
+          style="max-width: 500px"
           label-width="100px"
         >
           <el-form-item label="原密码" prop="old_pwd">

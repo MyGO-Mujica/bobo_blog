@@ -179,8 +179,8 @@ const handleCommand = async (key) => {
       font-family: 'ZCOOL XiaoWei', 'Microsoft YaHei', serif;
       font-size: 24px;
       strong {
-        font-family: 'Pacifico', 'Ma Shan Zheng', cursive, sans-serif;
-        font-size: 20px;
+        font-family: 'Pacifico', 'Zhi Mang Xing', cursive, sans-serif;
+        font-size: 19px;
         margin-left: 4px;
         letter-spacing: 1.5px;
       }
