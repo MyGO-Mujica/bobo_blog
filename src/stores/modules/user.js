@@ -18,9 +18,17 @@ export const useUserStore = defineStore(
     const getUser = async () => {
       const res = await userGetInfoService() // 请求获取数据
       user.value = res.data.data
+
+      // 确保角色字段存在，默认为普通用户
+      user.value.role = user.value.role || 'user'
     }
     const setUser = (obj) => {
       user.value = obj
+    }
+
+    // 检查是否为管理员
+    const isAdmin = () => {
+      return user.value?.role === 'admin'
     }
 
     return {
@@ -29,7 +37,8 @@ export const useUserStore = defineStore(
       removeToken,
       user,
       getUser,
-      setUser
+      setUser,
+      isAdmin
     }
   },
   {
