@@ -40,6 +40,10 @@ const router = createRouter({
         {
           path: '/user/password',
           component: () => import('@/views/user/UserPassword.vue')
+        },
+        {
+          path: '/square',
+          component: () => import('@/views/square/BlogSquare.vue')
         }
       ]
     }
