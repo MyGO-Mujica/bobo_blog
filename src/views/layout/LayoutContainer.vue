@@ -8,7 +8,8 @@ import {
   EditPen,
   SwitchButton,
   CaretBottom,
-  Orange
+  Orange,
+  ChatDotSquare
 } from '@element-plus/icons-vue'
 import avatar from '@/assets/avatar.png'
 import { useUserStore } from '@/stores'
@@ -73,6 +74,10 @@ const handleCommand = async (key) => {
           <el-icon><SetUp /></el-icon>
           <span>文章管理</span>
         </el-menu-item>
+        <el-menu-item index="/square">
+          <el-icon><ChatDotSquare /></el-icon>
+          <span>博客广场</span>
+        </el-menu-item>
 
         <el-sub-menu index="/user">
           <!-- 多级菜单的标题 - 具名插槽 title -->
@@ -99,10 +104,12 @@ const handleCommand = async (key) => {
     </el-aside>
     <el-container>
       <el-header>
-        <div>
-          迷途之子：<strong>{{
-            userStore.user.nickname || userStore.user.username
-          }}</strong>
+        <div class="header-left">
+          <span>
+            迷途之子：<strong>{{
+              userStore.user.nickname || userStore.user.username
+            }}</strong>
+          </span>
         </div>
         <el-dropdown placement="bottom-end" @command="handleCommand">
           <!-- 展示给用户，默认看到的 -->
@@ -175,14 +182,22 @@ const handleCommand = async (key) => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    div {
-      font-family: 'ZCOOL XiaoWei', 'Microsoft YaHei', serif;
-      font-size: 24px;
-      strong {
-        font-family: 'Pacifico', 'Zhi Mang Xing', cursive, sans-serif;
-        font-size: 19px;
-        margin-left: 4px;
-        letter-spacing: 1.5px;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      span {
+        font-family: 'ZCOOL XiaoWei', 'Microsoft YaHei', serif;
+        font-size: 24px;
+
+        strong {
+          font-family: 'Pacifico', 'Zhi Mang Xing', cursive, sans-serif;
+          font-size: 19px;
+          margin-left: 4px;
+          letter-spacing: 1.5px;
+        }
       }
     }
     .el-dropdown__box {
