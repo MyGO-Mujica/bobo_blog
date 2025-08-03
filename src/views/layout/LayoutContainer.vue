@@ -9,7 +9,7 @@ import {
   SwitchButton,
   CaretBottom,
   Orange,
-  ChatDotSquare
+  MessageBox
 } from '@element-plus/icons-vue'
 import avatar from '@/assets/avatar.png'
 import { useUserStore } from '@/stores'
@@ -75,7 +75,7 @@ const handleCommand = async (key) => {
           <span>文章管理</span>
         </el-menu-item>
         <el-menu-item index="/square">
-          <el-icon><ChatDotSquare /></el-icon>
+          <el-icon><MessageBox /></el-icon>
           <span>博客广场</span>
         </el-menu-item>
 
