@@ -63,12 +63,30 @@ const handleCommand = async (key) => {
       <div class="el-aside__title" v-show="!isCollapsed">博博の客</div>
       <div class="el-aside__logo" v-show="!isCollapsed"></div>
       <div class="collapse-btn-container">
+        <el-tooltip
+          v-if="isCollapsed"
+          :content="isCollapsed ? '展开菜单' : '收起菜单'"
+          placement="right"
+        >
+          <el-button
+            class="collapse-btn"
+            @click="toggleCollapse"
+            :icon="isCollapsed ? Expand : Fold"
+            circle
+            size="small"
+            :aria-label="isCollapsed ? '展开菜单' : '收起菜单'"
+            aria-describedby="sidebar-toggle-help"
+          />
+        </el-tooltip>
         <el-button
+          v-else
           class="collapse-btn"
           @click="toggleCollapse"
           :icon="isCollapsed ? Expand : Fold"
           circle
           size="small"
+          :aria-label="isCollapsed ? '展开菜单' : '收起菜单'"
+          aria-describedby="sidebar-toggle-help"
         />
       </div>
       <el-menu
@@ -79,41 +97,87 @@ const handleCommand = async (key) => {
         router
         :collapse="isCollapsed"
         :collapse-transition="true"
+        unique-opened
+        class="sidebar-menu"
       >
-        <el-menu-item index="/home">
+        <el-tooltip v-if="isCollapsed" content="首页" placement="right">
+          <el-menu-item index="/home" aria-label="首页导航">
+            <el-icon><Orange /></el-icon>
+            <template #title>首页</template>
+          </el-menu-item>
+        </el-tooltip>
+        <el-menu-item v-else index="/home" aria-label="首页导航">
           <el-icon><Orange /></el-icon>
           <template #title>首页</template>
         </el-menu-item>
-        <el-menu-item index="/article/channel">
+
+        <el-tooltip v-if="isCollapsed" content="文章分类" placement="right">
+          <el-menu-item index="/article/channel" aria-label="文章分类管理">
+            <el-icon><Collection /></el-icon>
+            <template #title>文章分类</template>
+          </el-menu-item>
+        </el-tooltip>
+        <el-menu-item v-else index="/article/channel" aria-label="文章分类管理">
           <el-icon><Collection /></el-icon>
           <template #title>文章分类</template>
         </el-menu-item>
-        <el-menu-item index="/article/manage">
+
+        <el-tooltip v-if="isCollapsed" content="文章管理" placement="right">
+          <el-menu-item index="/article/manage" aria-label="文章管理">
+            <el-icon><SetUp /></el-icon>
+            <template #title>文章管理</template>
+          </el-menu-item>
+        </el-tooltip>
+        <el-menu-item v-else index="/article/manage" aria-label="文章管理">
           <el-icon><SetUp /></el-icon>
           <template #title>文章管理</template>
         </el-menu-item>
-        <el-menu-item index="/square">
+
+        <el-tooltip v-if="isCollapsed" content="博客广场" placement="right">
+          <el-menu-item index="/square" aria-label="博客广场">
+            <el-icon><MessageBox /></el-icon>
+            <template #title>博客广场</template>
+          </el-menu-item>
+        </el-tooltip>
+        <el-menu-item v-else index="/square" aria-label="博客广场">
           <el-icon><MessageBox /></el-icon>
           <template #title>博客广场</template>
         </el-menu-item>
 
-        <el-sub-menu index="/user">
-          <!-- 多级菜单的标题 - 具名插槽 title -->
+        <el-tooltip v-if="isCollapsed" content="个人中心" placement="right">
+          <el-sub-menu index="/user" aria-label="个人中心菜单">
+            <template #title>
+              <el-icon><UserFilled /></el-icon>
+              <span>个人中心</span>
+            </template>
+            <el-menu-item index="/user/profile" aria-label="基本资料">
+              <el-icon><User /></el-icon>
+              <template #title>基本资料</template>
+            </el-menu-item>
+            <el-menu-item index="/user/avatar" aria-label="更换头像">
+              <el-icon><Crop /></el-icon>
+              <template #title>更换头像</template>
+            </el-menu-item>
+            <el-menu-item index="/user/password" aria-label="重置密码">
+              <el-icon><EditPen /></el-icon>
+              <template #title>重置密码</template>
+            </el-menu-item>
+          </el-sub-menu>
+        </el-tooltip>
+        <el-sub-menu v-else index="/user" aria-label="个人中心菜单">
           <template #title>
             <el-icon><UserFilled /></el-icon>
             <span>个人中心</span>
           </template>
-
-          <!-- 展开的内容 - 默认插槽 -->
-          <el-menu-item index="/user/profile">
+          <el-menu-item index="/user/profile" aria-label="基本资料">
             <el-icon><User /></el-icon>
             <template #title>基本资料</template>
           </el-menu-item>
-          <el-menu-item index="/user/avatar">
+          <el-menu-item index="/user/avatar" aria-label="更换头像">
             <el-icon><Crop /></el-icon>
             <template #title>更换头像</template>
           </el-menu-item>
-          <el-menu-item index="/user/password">
+          <el-menu-item index="/user/password" aria-label="重置密码">
             <el-icon><EditPen /></el-icon>
             <template #title>重置密码</template>
           </el-menu-item>
@@ -166,25 +230,33 @@ const handleCommand = async (key) => {
 <style lang="scss" scoped>
 .layout-container {
   height: 100vh;
+
   .el-aside {
     background-color: #171717;
     position: relative;
     transition: width 0.3s ease;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
 
     .collapse-btn-container {
       display: flex;
       justify-content: flex-start;
       padding: 10px 0 10px 19px;
-      // 24px与el-menu-item的icon左边距保持一致
 
       .collapse-btn {
         background-color: rgba(255, 255, 255, 0.1);
         border: 1px solid rgba(255, 255, 255, 0.2);
         color: #fff;
+        transition: all 0.2s ease;
 
         &:hover {
           background-color: rgba(255, 255, 255, 0.2);
           border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        &:focus {
+          outline: 2px solid #72a4fa;
+          outline-offset: 2px;
         }
       }
     }
@@ -201,26 +273,54 @@ const handleCommand = async (key) => {
       padding: 0 10px;
       overflow: hidden;
       white-space: nowrap;
-      transition: all 0.3s ease;
     }
     &__logo {
       height: 120px;
       background: url('@/assets/小圆白logo.png') no-repeat center / 120px auto;
       margin-bottom: -22px;
     }
-    .el-menu {
+
+    .sidebar-menu {
       border-right: none;
       background-color: #151515;
 
       &:not(.el-menu--collapse) {
         width: 200px;
+        min-height: 400px;
+      }
+
+      // 移除多余的transition，让Element Plus处理
+      .el-menu-item,
+      .el-sub-menu__title {
+        &:focus {
+          outline: 2px solid #72a4fa;
+          outline-offset: -2px;
+        }
+      }
+
+      // 工具提示样式优化
+      .el-tooltip__trigger {
+        width: 100%;
       }
     }
+
+    // 简化hover效果，移除transform避免动画冲突
     .el-menu-item:hover {
       background-color: #282727;
     }
+
     .el-menu-item.is-active {
       color: #72a4fa;
+      background-color: rgba(114, 164, 250, 0.1);
+      border-right: 3px solid #72a4fa;
+    }
+
+    .el-sub-menu__title:hover {
+      background-color: #282727;
+    }
+
+    .el-sub-menu.is-active .el-sub-menu__title {
+      color: #72a4fa !important;
     }
   }
   .el-header {
