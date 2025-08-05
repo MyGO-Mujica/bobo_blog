@@ -19,8 +19,7 @@ onMounted(async () => {
 
 // 检查用户角色
 const checkUserRole = async () => {
-  // TODO: 从后端获取用户角色信息
-  // 临时使用用户信息判断
+  // 从userStore中获取用户角色信息
   isAdmin.value = userStore.user?.role === 'admin'
 }
 
