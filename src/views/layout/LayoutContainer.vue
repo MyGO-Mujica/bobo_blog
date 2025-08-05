@@ -305,19 +305,18 @@ const handleCommand = async (key) => {
     // 简化hover效果，移除transform避免动画冲突
     .el-menu-item:hover {
       background-color: #282727;
-      transform: translateX(2px);
+      transform: translateX(3px);
     }
 
     .el-menu-item.is-active {
       color: #72a4fa;
       background-color: rgba(114, 164, 250, 0.1);
-      border: none; // 去掉所有边框
-      border-right: 3px solid #72a4fa;
+      border-right: 3.5px solid #72a4fa;
     }
 
     .el-sub-menu__title:hover {
       background-color: #282727;
-      transform: translateX(2px);
+      transform: translateX(3px);
     }
 
     .el-sub-menu.is-active .el-sub-menu__title {
