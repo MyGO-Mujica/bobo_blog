@@ -9,18 +9,25 @@ import {
   SwitchButton,
   CaretBottom,
   Orange,
-  MessageBox
+  MessageBox,
+  Expand,
+  Fold
 } from '@element-plus/icons-vue'
 import avatar from '@/assets/avatar.png'
 import { useUserStore } from '@/stores'
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 const userStore = useUserStore()
 const router = useRouter()
+const isCollapsed = ref(false)
 
 onMounted(() => {
   userStore.getUser()
 })
+
+const toggleCollapse = () => {
+  isCollapsed.value = !isCollapsed.value
+}
 
 const handleCommand = async (key) => {
   if (key === 'logout') {
@@ -52,31 +59,42 @@ const handleCommand = async (key) => {
       index="/article/channel" 配置的是访问的跳转路径，配合default-active的值，实现高亮
   -->
   <el-container class="layout-container">
-    <el-aside width="200px">
-      <div class="el-aside__title">博博の客</div>
-      <div class="el-aside__logo"></div>
+    <el-aside :width="isCollapsed ? '64px' : '200px'">
+      <div class="el-aside__title" v-show="!isCollapsed">博博の客</div>
+      <div class="el-aside__logo" v-show="!isCollapsed"></div>
+      <div class="collapse-btn-container">
+        <el-button
+          class="collapse-btn"
+          @click="toggleCollapse"
+          :icon="isCollapsed ? Expand : Fold"
+          circle
+          size="small"
+        />
+      </div>
       <el-menu
-        active-text-color="#ffd04b"
+        active-text-color="#72a4fa"
         background-color="#232323"
         :default-active="$route.path"
         text-color="#fff"
         router
+        :collapse="isCollapsed"
+        :collapse-transition="true"
       >
         <el-menu-item index="/home">
           <el-icon><Orange /></el-icon>
-          <span>首页</span>
+          <template #title>首页</template>
         </el-menu-item>
         <el-menu-item index="/article/channel">
           <el-icon><Collection /></el-icon>
-          <span>文章分类</span>
+          <template #title>文章分类</template>
         </el-menu-item>
         <el-menu-item index="/article/manage">
           <el-icon><SetUp /></el-icon>
-          <span>文章管理</span>
+          <template #title>文章管理</template>
         </el-menu-item>
         <el-menu-item index="/square">
           <el-icon><MessageBox /></el-icon>
-          <span>博客广场</span>
+          <template #title>博客广场</template>
         </el-menu-item>
 
         <el-sub-menu index="/user">
@@ -89,15 +107,15 @@ const handleCommand = async (key) => {
           <!-- 展开的内容 - 默认插槽 -->
           <el-menu-item index="/user/profile">
             <el-icon><User /></el-icon>
-            <span>基本资料</span>
+            <template #title>基本资料</template>
           </el-menu-item>
           <el-menu-item index="/user/avatar">
             <el-icon><Crop /></el-icon>
-            <span>更换头像</span>
+            <template #title>更换头像</template>
           </el-menu-item>
           <el-menu-item index="/user/password">
             <el-icon><EditPen /></el-icon>
-            <span>重置密码</span>
+            <template #title>重置密码</template>
           </el-menu-item>
         </el-sub-menu>
       </el-menu>
@@ -150,6 +168,27 @@ const handleCommand = async (key) => {
   height: 100vh;
   .el-aside {
     background-color: #171717;
+    position: relative;
+    transition: width 0.3s ease;
+
+    .collapse-btn-container {
+      display: flex;
+      justify-content: flex-start;
+      padding: 10px 0 10px 19px;
+      // 24px与el-menu-item的icon左边距保持一致
+
+      .collapse-btn {
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+
+        &:hover {
+          background-color: rgba(255, 255, 255, 0.2);
+          border-color: rgba(255, 255, 255, 0.3);
+        }
+      }
+    }
+
     &__title {
       font-family: 'Zhi Mang Xing', 'Microsoft YaHei', serif;
       color: #fff;
@@ -160,6 +199,9 @@ const handleCommand = async (key) => {
       margin-top: 15px;
       margin-bottom: 5px;
       padding: 0 10px;
+      overflow: hidden;
+      white-space: nowrap;
+      transition: all 0.3s ease;
     }
     &__logo {
       height: 120px;
@@ -169,6 +211,10 @@ const handleCommand = async (key) => {
     .el-menu {
       border-right: none;
       background-color: #151515;
+
+      &:not(.el-menu--collapse) {
+        width: 200px;
+      }
     }
     .el-menu-item:hover {
       background-color: #282727;
