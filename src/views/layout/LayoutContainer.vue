@@ -234,7 +234,7 @@ const handleCommand = async (key) => {
   .el-aside {
     background-color: #171717;
     position: relative;
-    transition: width 0.3s ease;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
     overflow: hidden;
 
@@ -247,9 +247,10 @@ const handleCommand = async (key) => {
         background-color: rgba(255, 255, 255, 0.1);
         border: 1px solid rgba(255, 255, 255, 0.2);
         color: #fff;
-        transition: all 0.2s ease;
+        transition: all 0.3s ease;
 
         &:hover {
+          transform: scale(1.05);
           background-color: rgba(255, 255, 255, 0.2);
           border-color: rgba(255, 255, 255, 0.3);
         }
@@ -292,10 +293,7 @@ const handleCommand = async (key) => {
       // 移除多余的transition，让Element Plus处理
       .el-menu-item,
       .el-sub-menu__title {
-        &:focus {
-          outline: 2px solid #72a4fa;
-          outline-offset: -2px;
-        }
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       // 工具提示样式优化
@@ -307,16 +305,19 @@ const handleCommand = async (key) => {
     // 简化hover效果，移除transform避免动画冲突
     .el-menu-item:hover {
       background-color: #282727;
+      transform: translateX(2px);
     }
 
     .el-menu-item.is-active {
       color: #72a4fa;
       background-color: rgba(114, 164, 250, 0.1);
+      border: none; // 去掉所有边框
       border-right: 3px solid #72a4fa;
     }
 
     .el-sub-menu__title:hover {
       background-color: #282727;
+      transform: translateX(2px);
     }
 
     .el-sub-menu.is-active .el-sub-menu__title {
