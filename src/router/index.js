@@ -44,6 +44,10 @@ const router = createRouter({
         {
           path: '/square',
           component: () => import('@/views/square/BlogSquare.vue')
+        },
+        {
+          path: '/square/post/:id',
+          component: () => import('@/views/square/PostDetail.vue')
         }
       ]
     }
