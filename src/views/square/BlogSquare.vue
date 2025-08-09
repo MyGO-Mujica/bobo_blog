@@ -506,7 +506,7 @@ const getContentPreview = (content, summary) => {
     transition: all 0.3s ease;
     position: relative;
     display: flex;
-    height: 140px;
+    height: 150px;
 
     &:hover {
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
@@ -520,7 +520,7 @@ const getContentPreview = (content, summary) => {
     .post-cover {
       position: relative;
       width: 180px;
-      height: 140px;
+      height: 150px;
       flex-shrink: 0;
       overflow: hidden;
 
