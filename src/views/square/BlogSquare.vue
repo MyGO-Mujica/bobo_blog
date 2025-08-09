@@ -122,6 +122,204 @@ const formatRelativeTime = (timeStr) => {
     })
   }
 }
+
+// 获取文章内容预览（优先使用后端返回的summary）
+const getContentPreview = (content, summary) => {
+  // 优先使用后端返回的智能摘要
+  if (summary && summary.trim()) {
+    return summary.length > 120 ? summary.substring(0, 120) + '...' : summary
+  }
+
+  // 降级方案：客户端解析Editor.js内容
+  if (!content) return '暂无内容'
+
+  try {
+    // 尝试解析 Editor.js JSON 格式
+    const editorData = JSON.parse(content)
+    if (editorData.blocks && Array.isArray(editorData.blocks)) {
+      const previewParts = []
+
+      editorData.blocks.forEach((block) => {
+        switch (block.type) {
+          case 'paragraph':
+            if (block.data.text) {
+              const cleanText = block.data.text.replace(/<[^>]*>/g, '')
+              if (cleanText.trim()) {
+                previewParts.push(cleanText)
+              }
+            }
+            break
+
+          case 'header':
+            if (block.data.text) {
+              const cleanText = block.data.text.replace(/<[^>]*>/g, '')
+              if (cleanText.trim()) {
+                previewParts.push(cleanText)
+              }
+            }
+            break
+
+          case 'list':
+            if (block.data.items && block.data.items.length > 0) {
+              const listItems = block.data.items
+                .map((item) => {
+                  if (typeof item === 'object' && item.content) {
+                    return item.content.replace(/<[^>]*>/g, '')
+                  } else if (typeof item === 'string') {
+                    return item.replace(/<[^>]*>/g, '')
+                  }
+                  return ''
+                })
+                .filter((item) => item.trim())
+                .join(' ')
+              if (listItems) {
+                previewParts.push(listItems)
+              }
+            }
+            break
+
+          case 'quote':
+            if (block.data.text) {
+              const cleanText = block.data.text.replace(/<[^>]*>/g, '')
+              if (cleanText.trim()) {
+                previewParts.push(`"${cleanText}"`)
+              }
+            }
+            break
+
+          case 'image':
+            previewParts.push('[图片]')
+            if (block.data.caption) {
+              const cleanCaption = block.data.caption.replace(/<[^>]*>/g, '')
+              if (cleanCaption.trim()) {
+                previewParts.push(cleanCaption)
+              }
+            }
+            break
+
+          case 'table':
+            previewParts.push('[表格]')
+            break
+
+          case 'code':
+            previewParts.push('[代码]')
+            if (block.data.caption) {
+              const cleanCaption = block.data.caption.replace(/<[^>]*>/g, '')
+              if (cleanCaption.trim()) {
+                previewParts.push(cleanCaption)
+              }
+            }
+            break
+
+          case 'delimiter':
+            previewParts.push('---')
+            break
+
+          case 'embed':
+            if (block.data.service) {
+              previewParts.push(`[${block.data.service}嵌入]`)
+            } else {
+              previewParts.push('[嵌入内容]')
+            }
+            break
+
+          case 'linkTool':
+            if (block.data.meta && block.data.meta.title) {
+              previewParts.push(`[链接: ${block.data.meta.title}]`)
+            } else {
+              previewParts.push('[链接]')
+            }
+            break
+
+          case 'warning':
+          case 'alert':
+            previewParts.push('[警告]')
+            if (block.data.message || block.data.text) {
+              const warningText = (
+                block.data.message || block.data.text
+              ).replace(/<[^>]*>/g, '')
+              if (warningText.trim()) {
+                previewParts.push(warningText)
+              }
+            }
+            break
+
+          case 'checklist':
+            if (block.data.items && block.data.items.length > 0) {
+              previewParts.push('[清单]')
+              const checklistText = block.data.items
+                .map((item) => item.text?.replace(/<[^>]*>/g, '') || '')
+                .filter((text) => text.trim())
+                .join(' ')
+              if (checklistText) {
+                previewParts.push(checklistText)
+              }
+            }
+            break
+
+          case 'raw':
+            if (block.data.html) {
+              const cleanText = block.data.html.replace(/<[^>]*>/g, '')
+              if (cleanText.trim()) {
+                previewParts.push(cleanText)
+              }
+            }
+            break
+
+          case 'marker':
+          case 'inlineCode':
+            if (block.data.text) {
+              const cleanText = block.data.text.replace(/<[^>]*>/g, '')
+              if (cleanText.trim()) {
+                previewParts.push(cleanText)
+              }
+            }
+            break
+
+          default:
+            // 对于未知的block类型，尝试提取text字段
+            if (block.data && block.data.text) {
+              const cleanText = block.data.text.replace(/<[^>]*>/g, '')
+              if (cleanText.trim()) {
+                previewParts.push(cleanText)
+              }
+            } else if (block.data && typeof block.data === 'object') {
+              // 如果有其他文本字段，尝试提取
+              const textFields = ['content', 'caption', 'title', 'description']
+              for (const field of textFields) {
+                if (
+                  block.data[field] &&
+                  typeof block.data[field] === 'string'
+                ) {
+                  const cleanText = block.data[field].replace(/<[^>]*>/g, '')
+                  if (cleanText.trim()) {
+                    previewParts.push(cleanText)
+                    break
+                  }
+                }
+              }
+            }
+            break
+        }
+      })
+
+      if (previewParts.length > 0) {
+        const fullText = previewParts.join(' ')
+        return fullText.length > 120
+          ? fullText.substring(0, 120) + '...'
+          : fullText
+      }
+    }
+  } catch (e) {
+    // 如果不是JSON格式，按原HTML处理
+    const textContent = content.replace(/<[^>]*>/g, '')
+    return textContent.length > 120
+      ? textContent.substring(0, 120) + '...'
+      : textContent
+  }
+
+  return '暂无内容'
+}
 </script>
 
 <template>
@@ -177,8 +375,7 @@ const formatRelativeTime = (timeStr) => {
 
               <!-- 内容预览 -->
               <div class="post-summary">
-                {{ post.content?.substring(0, 120) }}
-                <span v-if="post.content?.length > 120">...</span>
+                {{ getContentPreview(post.content, post.summary) }}
               </div>
 
               <!-- 底部区域 -->
