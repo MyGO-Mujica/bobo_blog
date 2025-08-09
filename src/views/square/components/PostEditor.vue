@@ -359,20 +359,34 @@ const updateContentLength = async () => {
             case 'paragraph':
               totalLength += getTextLength(block.data.text || '')
               break
+
             case 'header':
               totalLength += getTextLength(block.data.text || '')
               break
+
             case 'quote':
               totalLength += getTextLength(block.data.text || '')
               totalLength += getTextLength(block.data.caption || '')
               break
+
             case 'warning':
+            case 'alert':
               totalLength += getTextLength(block.data.title || '')
-              totalLength += getTextLength(block.data.message || '')
+              totalLength += getTextLength(
+                block.data.message || block.data.text || ''
+              )
               break
+
             case 'code':
               totalLength += getTextLength(block.data.code || '')
+              totalLength += getTextLength(block.data.caption || '')
               break
+
+            case 'image':
+              // 统计图片描述
+              totalLength += getTextLength(block.data.caption || '')
+              break
+
             case 'checklist':
               if (block.data.items && Array.isArray(block.data.items)) {
                 block.data.items.forEach((item) => {
@@ -380,6 +394,7 @@ const updateContentLength = async () => {
                 })
               }
               break
+
             case 'table':
               if (block.data.content && Array.isArray(block.data.content)) {
                 block.data.content.forEach((row) => {
@@ -391,6 +406,75 @@ const updateContentLength = async () => {
                 })
               }
               break
+
+            case 'list':
+              if (block.data.items && Array.isArray(block.data.items)) {
+                block.data.items.forEach((item) => {
+                  if (typeof item === 'string') {
+                    totalLength += getTextLength(item)
+                  } else if (typeof item === 'object' && item.content) {
+                    totalLength += getTextLength(item.content)
+                  } else if (typeof item === 'object' && item.text) {
+                    totalLength += getTextLength(item.text)
+                  }
+                })
+              }
+              break
+
+            case 'linkTool':
+              // 统计链接的标题和描述
+              if (block.data.meta) {
+                totalLength += getTextLength(block.data.meta.title || '')
+                totalLength += getTextLength(block.data.meta.description || '')
+              }
+              break
+
+            case 'embed':
+              // 统计嵌入内容的描述
+              totalLength += getTextLength(block.data.caption || '')
+              break
+
+            case 'attaches': {
+              // 统计附件的标题和描述
+              if (block.data.file) {
+                totalLength += getTextLength(
+                  block.data.file.title || block.data.file.name || ''
+                )
+              }
+              totalLength += getTextLength(block.data.title || '')
+              break
+            }
+
+            case 'raw':
+              // 统计原始HTML中的文本内容
+              totalLength += getTextLength(block.data.html || '')
+              break
+
+            case 'marker':
+            case 'inlineCode':
+              totalLength += getTextLength(block.data.text || '')
+              break
+
+            default: {
+              // 对于未知类型，尝试提取常见的文本字段
+              const textFields = [
+                'text',
+                'content',
+                'caption',
+                'title',
+                'description',
+                'message'
+              ]
+              textFields.forEach((field) => {
+                if (
+                  block.data[field] &&
+                  typeof block.data[field] === 'string'
+                ) {
+                  totalLength += getTextLength(block.data[field])
+                }
+              })
+              break
+            }
           }
         }
       })
