@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores'
 import { Star, EditPen, Delete } from '@element-plus/icons-vue'
 import { getPostList, deletePost } from '@/api/square'
+import { formatRelativeTime } from '@/utils/format'
 import PostEditor from './components/PostEditor.vue'
 
 const router = useRouter()
@@ -96,31 +97,6 @@ const handlePostSuccess = () => {
   // 重新加载帖子列表
   currentPage.value = 1
   loadPosts()
-}
-
-// 格式化相对时间
-const formatRelativeTime = (timeStr) => {
-  if (!timeStr) return ''
-  const now = new Date()
-  const date = new Date(timeStr)
-  const diff = now - date
-
-  const minutes = Math.floor(diff / (1000 * 60))
-  const hours = Math.floor(diff / (1000 * 60 * 60))
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-
-  if (minutes < 60) {
-    return `${minutes}分钟前`
-  } else if (hours < 24) {
-    return `${hours}小时前`
-  } else if (days < 7) {
-    return `${days}天前`
-  } else {
-    return date.toLocaleDateString('zh-CN', {
-      month: '2-digit',
-      day: '2-digit'
-    })
-  }
 }
 
 // 获取文章内容预览（优先使用后端返回的summary）
@@ -396,7 +372,7 @@ const getContentPreview = (content, summary) => {
                   />
                   <span class="username">{{ post.username }}</span>
                   <span class="post-time">{{
-                    formatRelativeTime(post.create_time)
+                    formatRelativeTime(post.created_at)
                   }}</span>
 
                   <!-- 删除按钮（仅作者和管理员可见） -->

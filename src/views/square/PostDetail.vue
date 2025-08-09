@@ -18,7 +18,9 @@
             />
             <div class="user-details">
               <div class="username">{{ post.nickname || post.username }}</div>
-              <div class="post-time">{{ formatTime(post.create_time) }}</div>
+              <div class="post-time">
+                {{ formatDetailTime(post.created_at) }}
+              </div>
             </div>
           </div>
 
@@ -114,7 +116,7 @@
                     comment.nickname || comment.username
                   }}</span>
                   <span class="comment-time">{{
-                    formatTime(comment.create_time)
+                    formatDetailTime(comment.create_time)
                   }}</span>
                 </div>
                 <div class="comment-content">{{ comment.content }}</div>
@@ -154,6 +156,7 @@ import {
   getCommentList,
   addComment
 } from '@/api/square'
+import { formatDetailTime } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -274,19 +277,6 @@ const submitComment = async () => {
 // 返回广场
 const goBack = () => {
   router.push('/square')
-}
-
-// 格式化时间
-const formatTime = (timeStr) => {
-  if (!timeStr) return ''
-  const date = new Date(timeStr)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
 }
 
 // 格式化内容 - 将EditorJS JSON转换为HTML
