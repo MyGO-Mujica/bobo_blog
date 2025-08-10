@@ -1,141 +1,3 @@
-<template>
-  <page-container title="帖子详情" class="post-detail-container">
-    <template #extra>
-      <el-button @click="goBack" plain>
-        <el-icon><ArrowLeft /></el-icon>
-        返回广场
-      </el-button>
-    </template>
-
-    <div v-loading="loading" class="post-detail">
-      <div v-if="post" class="post-content">
-        <!-- 帖子头部信息 -->
-        <div class="post-header">
-          <div class="user-info">
-            <el-avatar
-              :src="post.user_pic || '/src/assets/avatar.png'"
-              :size="50"
-            />
-            <div class="user-details">
-              <div class="username">{{ post.nickname || post.username }}</div>
-              <div class="post-time">
-                {{ formatDetailTime(post.created_at) }}
-              </div>
-            </div>
-          </div>
-
-          <!-- 操作按钮 -->
-          <div class="post-actions">
-            <el-button
-              v-if="canDelete"
-              @click="handleDeletePost"
-              type="danger"
-              plain
-            >
-              <el-icon><Delete /></el-icon>
-              删除帖子
-            </el-button>
-          </div>
-        </div>
-
-        <!-- 帖子标题和内容 -->
-        <div class="post-body">
-          <h1 class="post-title">{{ post.title }}</h1>
-          <div
-            class="post-content-text"
-            v-html="formatContent(post.content)"
-          ></div>
-        </div>
-
-        <!-- 互动区域 -->
-        <div class="post-interactions">
-          <div class="stats">
-            <span class="stat-item">
-              <el-icon><View /></el-icon>
-              浏览 {{ post.view_count || 0 }}
-            </span>
-            <span class="stat-item">
-              <el-icon><ChatDotRound /></el-icon>
-              评论 {{ post.comment_count || 0 }}
-            </span>
-          </div>
-
-          <el-button
-            @click="toggleLike"
-            :type="post.is_liked ? 'primary' : ''"
-            plain
-          >
-            <el-icon><Star /></el-icon>
-            {{ post.is_liked ? '已点赞' : '点赞' }} ({{ post.like_count || 0 }})
-          </el-button>
-        </div>
-
-        <!-- 评论区域 -->
-        <div class="comments-section">
-          <div class="comments-header">
-            <h3>评论区</h3>
-          </div>
-
-          <!-- 发表评论 -->
-          <div class="comment-form">
-            <el-input
-              v-model="newComment"
-              type="textarea"
-              :rows="3"
-              placeholder="写下你的想法..."
-              maxlength="500"
-              show-word-limit
-            />
-            <div class="form-actions">
-              <el-button
-                @click="submitComment"
-                type="primary"
-                :loading="commentLoading"
-                :disabled="!newComment.trim()"
-              >
-                发表评论
-              </el-button>
-            </div>
-          </div>
-
-          <!-- 评论列表 -->
-          <div class="comments-list">
-            <div v-if="comments.length === 0" class="empty-comments">
-              暂无评论，快来发表第一个评论吧~
-            </div>
-            <div v-else>
-              <!-- 这里后续会用评论组件替换 -->
-              <div
-                v-for="comment in comments"
-                :key="comment.id"
-                class="comment-item"
-              >
-                <div class="comment-user">
-                  <el-avatar :size="30" :src="comment.user_pic" />
-                  <span class="comment-username">{{
-                    comment.nickname || comment.username
-                  }}</span>
-                  <span class="comment-time">{{
-                    formatDetailTime(comment.create_time)
-                  }}</span>
-                </div>
-                <div class="comment-content">{{ comment.content }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 帖子不存在 -->
-      <div v-else-if="!loading" class="post-not-found">
-        <el-empty description="帖子不存在或已被删除">
-          <el-button type="primary" @click="goBack">返回广场</el-button>
-        </el-empty>
-      </div>
-    </div>
-  </page-container>
-</template>
-
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -508,10 +370,161 @@ const formatContent = (content) => {
 }
 </script>
 
+<template>
+  <page-container :title="post?.title" class="post-detail-container">
+    <template #extra>
+      <el-button @click="goBack" plain>
+        <el-icon><ArrowLeft /></el-icon>
+        <div class="back-text" style="font-size: 14px">返回广场</div>
+      </el-button>
+    </template>
+
+    <div v-loading="loading" class="post-detail">
+      <div v-if="post" class="post-content">
+        <!-- 帖子头部信息 -->
+        <div class="post-header">
+          <div class="user-info">
+            <el-avatar
+              :src="post.user_pic || '/src/assets/avatar.png'"
+              :size="50"
+            />
+            <div class="user-details">
+              <div class="username">{{ post.username }}</div>
+              <div class="post-time">
+                {{ formatDetailTime(post.created_at) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="post-actions">
+            <el-button
+              v-if="canDelete"
+              @click="handleDeletePost"
+              type="danger"
+              plain
+              size="small"
+            >
+              <el-icon><Delete /></el-icon>
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 帖子内容 -->
+        <div class="post-body">
+          <div
+            class="post-content-text"
+            v-html="formatContent(post.content)"
+          ></div>
+        </div>
+
+        <!-- 互动区域 -->
+        <div class="post-interactions">
+          <div class="stats">
+            <span class="stat-item">
+              <el-icon><View /></el-icon>
+              浏览 {{ post.view_count || 0 }}
+            </span>
+            <span class="stat-item">
+              <el-icon><ChatDotRound /></el-icon>
+              评论 {{ post.comment_count || 0 }}
+            </span>
+          </div>
+
+          <el-button
+            @click="toggleLike"
+            :type="post.is_liked ? 'primary' : ''"
+            plain
+          >
+            <el-icon><Star /></el-icon>
+            {{ post.is_liked ? '已点赞' : '点赞' }} ({{ post.like_count || 0 }})
+          </el-button>
+        </div>
+
+        <!-- 评论区域 -->
+        <div class="comments-section">
+          <div class="comments-header">
+            <h3>评论区</h3>
+          </div>
+
+          <!-- 发表评论 -->
+          <div class="comment-form">
+            <el-input
+              v-model="newComment"
+              type="textarea"
+              :rows="3"
+              placeholder="写下你的想法..."
+              maxlength="500"
+              show-word-limit
+            />
+            <div class="form-actions">
+              <el-button
+                @click="submitComment"
+                type="primary"
+                :loading="commentLoading"
+                :disabled="!newComment.trim()"
+              >
+                发表评论
+              </el-button>
+            </div>
+          </div>
+
+          <!-- 评论列表 -->
+          <div class="comments-list">
+            <div v-if="comments.length === 0" class="empty-comments">
+              暂无评论，快来发表第一个评论吧~
+            </div>
+            <div v-else>
+              <!-- 这里后续会用评论组件替换 -->
+              <div
+                v-for="comment in comments"
+                :key="comment.id"
+                class="comment-item"
+              >
+                <div class="comment-user">
+                  <el-avatar :size="30" :src="comment.user_pic" />
+                  <span class="comment-username">{{
+                    comment.nickname || comment.username
+                  }}</span>
+                  <span class="comment-time">{{
+                    formatDetailTime(comment.create_time)
+                  }}</span>
+                </div>
+                <div class="comment-content">{{ comment.content }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 帖子不存在 -->
+      <div v-else-if="!loading" class="post-not-found">
+        <el-empty description="帖子不存在或已被删除">
+          <el-button type="primary" @click="goBack">返回广场</el-button>
+        </el-empty>
+      </div>
+    </div>
+  </page-container>
+</template>
+
 <style lang="scss" scoped>
 .post-detail-container {
   max-width: 800px;
   margin: 0 auto;
+
+  // 直接选择 page-container 内的 header 元素
+  :deep(.el-card__header .header) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+
+    // 标题样式
+    span {
+      font-size: 20px;
+      font-weight: 600;
+    }
+  }
 }
 
 .post-detail {
@@ -553,14 +566,6 @@ const formatContent = (content) => {
 
   .post-body {
     margin-bottom: 32px;
-
-    .post-title {
-      font-size: 24px;
-      font-weight: 600;
-      color: #303133;
-      margin: 0 0 16px 0;
-      line-height: 1.4;
-    }
 
     .post-content-text {
       color: #606266;
