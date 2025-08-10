@@ -1341,8 +1341,8 @@ const renderEditorContent = (content) => {
           font-weight: 500;
 
           &.已发布 {
-            background: rgb(240, 249, 235);
-            color: rgb(103, 194, 58, 0.9);
+            background: rgb(227, 243, 218);
+            color: rgba(66, 123, 38, 0.9);
           }
 
           &.草稿 {
