@@ -3,13 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import {
-  ArrowLeft,
-  Delete,
-  View,
-  ChatDotRound,
-  Star
-} from '@element-plus/icons-vue'
+import { Delete, View, ChatDotRound, Star } from '@element-plus/icons-vue'
 import {
   getPostDetail,
   likePost,
@@ -134,11 +128,6 @@ const submitComment = async () => {
   } finally {
     commentLoading.value = false
   }
-}
-
-// 返回广场
-const goBack = () => {
-  router.push('/square')
 }
 
 // 格式化内容 - 将EditorJS JSON转换为HTML
@@ -372,13 +361,6 @@ const formatContent = (content) => {
 
 <template>
   <page-container :title="post?.title" class="post-detail-container">
-    <template #extra>
-      <el-button @click="goBack" plain>
-        <el-icon><ArrowLeft /></el-icon>
-        <div class="back-text" style="font-size: 14px">返回广场</div>
-      </el-button>
-    </template>
-
     <div v-loading="loading" class="post-detail">
       <div v-if="post" class="post-content">
         <!-- 帖子头部信息 -->
@@ -512,6 +494,15 @@ const formatContent = (content) => {
   max-width: 800px;
   margin: 0 auto;
 
+  :deep(.el-card__header) {
+    border-bottom: none;
+    padding: 20px 20px 0px 20px;
+  }
+  // 让 page-container 卡片占满可用空间
+  :deep(.el-card__body) {
+    padding: 0;
+  }
+
   // 直接选择 page-container 内的 header 元素
   :deep(.el-card__header .header) {
     display: flex;
@@ -521,18 +512,24 @@ const formatContent = (content) => {
 
     // 标题样式
     span {
-      font-size: 20px;
-      font-weight: 600;
+      font-size: 24px;
+      font-weight: 700;
+      margin-left: 10px;
     }
   }
 }
 
 .post-detail {
+  // 移除默认的 page-container 内边距，让 post-content 占满空间
+  margin: 0;
+
   .post-content {
     background: white;
     border-radius: 8px;
     padding: 24px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    // 确保内容占满容器宽度
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .post-header {
@@ -540,7 +537,7 @@ const formatContent = (content) => {
     justify-content: space-between;
     align-items: center;
     padding-bottom: 20px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0e8e8;
     margin-bottom: 24px;
 
     .user-info {
