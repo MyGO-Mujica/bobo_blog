@@ -3,7 +3,13 @@ import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete, View, ChatDotRound, More, Top } from '@element-plus/icons-vue'
+import {
+  Delete,
+  View,
+  ChatDotRound,
+  More,
+  ArrowUpBold
+} from '@element-plus/icons-vue'
 import {
   getPostDetail,
   likePost,
@@ -536,40 +542,52 @@ const formatContent = (content) => {
 
     <!-- B站风格侧边工具栏 -->
     <div v-if="post" class="side-toolbar">
-      <!-- 点赞 -->
-      <div class="toolbar-item" @click="toggleLike">
-        <div class="toolbar-icon" :class="{ active: post.is_liked }">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
-            />
-          </svg>
+      <!-- 主要交互组 -->
+      <div class="toolbar-group">
+        <!-- 点赞 -->
+        <div class="toolbar-item" @click="toggleLike">
+          <div class="toolbar-icon" :class="{ active: post.is_liked }">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
+                stroke-linejoin="round"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+          <span class="toolbar-text">{{ post.like_count || 0 }}</span>
         </div>
-        <span class="toolbar-text">{{ post.like_count || 0 }}</span>
+
+        <!-- 评论 -->
+        <div class="toolbar-item" @click="scrollToComments">
+          <div class="toolbar-icon">
+            <el-icon><ChatDotRound /></el-icon>
+          </div>
+          <span class="toolbar-text">{{ post.comment_count || 0 }}</span>
+        </div>
+
+        <!-- 浏览量 -->
+        <div class="toolbar-item">
+          <div class="toolbar-icon">
+            <el-icon><View /></el-icon>
+          </div>
+          <span class="toolbar-text">{{ post.view_count || 0 }}</span>
+        </div>
       </div>
 
-      <!-- 评论 -->
-      <div class="toolbar-item" @click="scrollToComments">
-        <div class="toolbar-icon">
-          <el-icon><ChatDotRound /></el-icon>
+      <!-- 返回顶部 - 单独显示 -->
+      <div v-if="showBackToTop" class="toolbar-group">
+        <div class="toolbar-item" @click="scrollToTop">
+          <div class="toolbar-icon">
+            <el-icon><ArrowUpBold /></el-icon>
+          </div>
+          <span class="toolbar-text">顶部</span>
         </div>
-        <span class="toolbar-text">{{ post.comment_count || 0 }}</span>
-      </div>
-
-      <!-- 浏览量 -->
-      <div class="toolbar-item">
-        <div class="toolbar-icon">
-          <el-icon><View /></el-icon>
-        </div>
-        <span class="toolbar-text">{{ post.view_count || 0 }}</span>
-      </div>
-
-      <!-- 返回顶部 -->
-      <div v-if="showBackToTop" class="toolbar-item" @click="scrollToTop">
-        <div class="toolbar-icon">
-          <el-icon><Top /></el-icon>
-        </div>
-        <span class="toolbar-text">顶部</span>
       </div>
     </div>
   </page-container>
@@ -1162,25 +1180,45 @@ const formatContent = (content) => {
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
+
+  .toolbar-group {
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+
+    &:hover {
+      background: rgba(255, 255, 255, 1);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
+    }
+  }
 
   .toolbar-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 12px 8px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 8px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    padding: 8px 8px;
     cursor: pointer;
     transition: all 0.3s ease;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    backdrop-filter: blur(10px);
+    position: relative;
+
+    &:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 20%;
+      right: 20%;
+      height: 1px;
+      background: rgba(0, 0, 0, 0.06);
+    }
 
     &:hover {
-      background: rgba(255, 255, 255, 1);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-      transform: translateY(-2px);
+      background: rgba(64, 158, 255, 0.05);
     }
 
     .toolbar-icon {
@@ -1207,9 +1245,9 @@ const formatContent = (content) => {
     }
 
     .toolbar-text {
-      font-size: 11px;
+      font-size: 10px;
       color: #666;
-      margin-top: 4px;
+      margin-top: 3px;
       font-weight: 500;
       min-width: 24px;
       text-align: center;
@@ -1225,13 +1263,36 @@ const formatContent = (content) => {
   }
 
   // 点赞按钮特殊样式
-  .toolbar-item:first-child {
+  .toolbar-group:first-child .toolbar-item:first-child {
+    .toolbar-icon {
+      svg {
+        transition: all 0.3s ease;
+      }
+    }
+
     .toolbar-icon.active {
       color: #409eff;
+
+      svg {
+        fill: #409eff;
+        stroke: #409eff;
+      }
     }
 
     &:hover .toolbar-icon.active {
       color: #66b1ff;
+
+      svg {
+        fill: #66b1ff;
+        stroke: #66b1ff;
+      }
+    }
+
+    // 未点赞状态的悬停效果
+    &:hover .toolbar-icon:not(.active) {
+      svg {
+        stroke: #409eff;
+      }
     }
   }
 }
