@@ -6,7 +6,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Delete,
   View,
-  ChatDotRound,
+  ChatRound,
   More,
   ArrowUpBold
 } from '@element-plus/icons-vue'
@@ -566,7 +566,7 @@ const formatContent = (content) => {
         <!-- 评论 -->
         <div class="toolbar-item" @click="scrollToComments">
           <div class="toolbar-icon">
-            <el-icon><ChatDotRound /></el-icon>
+            <el-icon><ChatRound /></el-icon>
           </div>
           <span class="toolbar-text">{{ post.comment_count || 0 }}</span>
         </div>
