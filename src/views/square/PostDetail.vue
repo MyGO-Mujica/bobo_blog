@@ -1,9 +1,9 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete, View, ChatDotRound, Star } from '@element-plus/icons-vue'
+import { Delete, View, ChatDotRound, More, Top } from '@element-plus/icons-vue'
 import {
   getPostDetail,
   likePost,
@@ -24,6 +24,7 @@ const post = ref(null)
 const comments = ref([])
 const newComment = ref('')
 const commentLoading = ref(false)
+const showBackToTop = ref(false)
 
 // 计算属性
 const canDelete = computed(() => {
@@ -36,7 +37,57 @@ const canDelete = computed(() => {
 onMounted(async () => {
   await loadPost()
   await loadComments()
+
+  // 监听el-main容器的滚动事件
+  const elMain = document.querySelector('.el-main')
+  if (elMain) {
+    elMain.addEventListener('scroll', handleScroll, { passive: true })
+  }
 })
+
+onUnmounted(() => {
+  // 移除滚动监听
+  const elMain = document.querySelector('.el-main')
+  if (elMain) {
+    elMain.removeEventListener('scroll', handleScroll)
+  }
+})
+
+// 滚动到评论区
+const scrollToComments = () => {
+  const commentsElement = document.querySelector('.comments-section')
+  if (commentsElement) {
+    commentsElement.scrollIntoView({
+      behavior: 'smooth'
+    })
+  }
+}
+
+// 返回顶部
+const scrollToTop = () => {
+  const elMain = document.querySelector('.el-main')
+  if (elMain) {
+    elMain.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
+}
+
+// 监听滚动事件
+const handleScroll = (event) => {
+  let scrollTop = 0
+
+  // 获取el-main容器的滚动位置
+  if (event && event.target) {
+    scrollTop = event.target.scrollTop || 0
+  } else {
+    const elMain = document.querySelector('.el-main')
+    scrollTop = elMain ? elMain.scrollTop : 0
+  }
+
+  showBackToTop.value = scrollTop > 150
+}
 
 // 加载帖子详情
 const loadPost = async () => {
@@ -100,6 +151,18 @@ const handleDeletePost = async () => {
       console.error('删除帖子失败:', error)
       ElMessage.error('删除失败')
     }
+  }
+}
+
+// 处理下拉菜单命令
+const handleCommand = (command) => {
+  switch (command) {
+    case 'delete':
+      handleDeletePost()
+      break
+    // 可以在这里添加更多操作选项
+    default:
+      break
   }
 }
 
@@ -380,15 +443,24 @@ const formatContent = (content) => {
 
           <!-- 操作按钮 -->
           <div class="post-actions">
-            <el-button
+            <el-dropdown
               v-if="canDelete"
-              @click="handleDeletePost"
-              type="danger"
-              plain
-              size="small"
+              trigger="hover"
+              placement="bottom-end"
+              @command="handleCommand"
             >
-              <el-icon><Delete /></el-icon>
-            </el-button>
+              <el-button text circle>
+                <el-icon><More /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="delete" class="delete-item">
+                    <el-icon><Delete /></el-icon>
+                    删除帖子
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </div>
         </div>
 
@@ -398,29 +470,6 @@ const formatContent = (content) => {
             class="post-content-text"
             v-html="formatContent(post.content)"
           ></div>
-        </div>
-
-        <!-- 互动区域 -->
-        <div class="post-interactions">
-          <div class="stats">
-            <span class="stat-item">
-              <el-icon><View /></el-icon>
-              浏览 {{ post.view_count || 0 }}
-            </span>
-            <span class="stat-item">
-              <el-icon><ChatDotRound /></el-icon>
-              评论 {{ post.comment_count || 0 }}
-            </span>
-          </div>
-
-          <el-button
-            @click="toggleLike"
-            :type="post.is_liked ? 'primary' : ''"
-            plain
-          >
-            <el-icon><Star /></el-icon>
-            {{ post.is_liked ? '已点赞' : '点赞' }} ({{ post.like_count || 0 }})
-          </el-button>
         </div>
 
         <!-- 评论区域 -->
@@ -481,9 +530,46 @@ const formatContent = (content) => {
 
       <!-- 帖子不存在 -->
       <div v-else-if="!loading" class="post-not-found">
-        <el-empty description="帖子不存在或已被删除">
-          <el-button type="primary" @click="goBack">返回广场</el-button>
-        </el-empty>
+        <el-empty description="帖子不存在或已被删除"> </el-empty>
+      </div>
+    </div>
+
+    <!-- B站风格侧边工具栏 -->
+    <div v-if="post" class="side-toolbar">
+      <!-- 点赞 -->
+      <div class="toolbar-item" @click="toggleLike">
+        <div class="toolbar-icon" :class="{ active: post.is_liked }">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
+            />
+          </svg>
+        </div>
+        <span class="toolbar-text">{{ post.like_count || 0 }}</span>
+      </div>
+
+      <!-- 评论 -->
+      <div class="toolbar-item" @click="scrollToComments">
+        <div class="toolbar-icon">
+          <el-icon><ChatDotRound /></el-icon>
+        </div>
+        <span class="toolbar-text">{{ post.comment_count || 0 }}</span>
+      </div>
+
+      <!-- 浏览量 -->
+      <div class="toolbar-item">
+        <div class="toolbar-icon">
+          <el-icon><View /></el-icon>
+        </div>
+        <span class="toolbar-text">{{ post.view_count || 0 }}</span>
+      </div>
+
+      <!-- 返回顶部 -->
+      <div v-if="showBackToTop" class="toolbar-item" @click="scrollToTop">
+        <div class="toolbar-icon">
+          <el-icon><Top /></el-icon>
+        </div>
+        <span class="toolbar-text">顶部</span>
       </div>
     </div>
   </page-container>
@@ -557,6 +643,37 @@ const formatContent = (content) => {
           font-size: 13px;
           margin-top: 4px;
         }
+      }
+    }
+
+    // 操作按钮区域
+    .post-actions {
+      .el-dropdown {
+        .el-button {
+          color: #909399;
+          background-color: white;
+
+          &:hover {
+            color: #505153;
+            background-color: #f5f5f5;
+          }
+        }
+      }
+    }
+  }
+
+  // 下拉菜单样式
+  :deep(.el-dropdown-menu) {
+    .delete-item {
+      color: #f56c6c;
+
+      &:hover {
+        color: #f56c6c;
+        background-color: #fef0f0;
+      }
+
+      .el-icon {
+        margin-right: 8px;
       }
     }
   }
@@ -1033,6 +1150,102 @@ const formatContent = (content) => {
     justify-content: center;
     align-items: center;
     height: 400px;
+  }
+}
+
+// B站风格侧边工具栏
+.side-toolbar {
+  position: fixed;
+  right: 200px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .toolbar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 8px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(10px);
+
+    &:hover {
+      background: rgba(255, 255, 255, 1);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .toolbar-icon {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      transition: color 0.3s ease;
+
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .el-icon {
+        font-size: 20px;
+      }
+
+      &.active {
+        color: #409eff;
+      }
+    }
+
+    .toolbar-text {
+      font-size: 11px;
+      color: #666;
+      margin-top: 4px;
+      font-weight: 500;
+      min-width: 24px;
+      text-align: center;
+    }
+
+    &:hover .toolbar-icon {
+      color: #409eff;
+    }
+
+    &:hover .toolbar-text {
+      color: #409eff;
+    }
+  }
+
+  // 点赞按钮特殊样式
+  .toolbar-item:first-child {
+    .toolbar-icon.active {
+      color: #409eff;
+    }
+
+    &:hover .toolbar-icon.active {
+      color: #66b1ff;
+    }
+  }
+}
+
+// 响应式适配
+@media (max-width: 1200px) {
+  .side-toolbar {
+    right: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .side-toolbar {
+    display: none;
   }
 }
 </style>
