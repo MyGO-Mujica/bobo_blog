@@ -481,19 +481,30 @@ const formatContent = (content) => {
         <!-- 评论区域 -->
         <div class="comments-section">
           <div class="comments-header">
-            <h3>评论区</h3>
+            <h3>
+              评论
+              <span v-if="comments.length > 0" class="comment-count">
+                ({{ comments.length }})
+              </span>
+            </h3>
           </div>
 
           <!-- 发表评论 -->
           <div class="comment-form">
-            <el-input
-              v-model="newComment"
-              type="textarea"
-              :rows="3"
-              placeholder="写下你的想法..."
-              maxlength="500"
-              show-word-limit
-            />
+            <div class="comment-input-wrapper">
+              <div class="user-avatar-wrapper">
+                <el-avatar
+                  :src="userStore.user?.user_pic || '/src/assets/avatar.png'"
+                  :size="40"
+                />
+              </div>
+              <el-input
+                v-model="newComment"
+                type="textarea"
+                :autosize="{ minRows: 1, maxRows: 6 }"
+                placeholder="写下你的想法..."
+              />
+            </div>
             <div class="form-actions">
               <el-button
                 @click="submitComment"
@@ -501,7 +512,7 @@ const formatContent = (content) => {
                 :loading="commentLoading"
                 :disabled="!newComment.trim()"
               >
-                发表评论
+                发表
               </el-button>
             </div>
           </div>
@@ -1108,16 +1119,46 @@ const formatContent = (content) => {
   .comments-section {
     .comments-header {
       h3 {
-        margin: 0 0 20px 0;
+        margin: 0 0 20px 30px;
         color: #303133;
+
+        .comment-count {
+          font-size: 14px;
+          color: #909399;
+          font-weight: 400;
+          margin-left: 8px;
+        }
       }
     }
 
     .comment-form {
       margin-bottom: 32px;
 
+      .comment-input-wrapper {
+        display: flex;
+        align-items: flex-start;
+        margin-left: 30px;
+        gap: 20px;
+
+        .el-input {
+          flex: 1;
+        }
+
+        .user-avatar-wrapper {
+          flex-shrink: 0;
+        }
+      }
+
+      :deep(.el-textarea__inner) {
+        resize: none;
+        height: 40px !important;
+        width: 95%;
+        line-height: 1.6;
+        padding: 8px 12px;
+      }
+
       .form-actions {
-        margin-top: 12px;
+        margin: 15px 32px;
         display: flex;
         justify-content: flex-end;
       }
