@@ -358,7 +358,7 @@ const getContentPreview = (content, summary) => {
               <div class="post-bottom">
                 <!-- 统计信息 -->
                 <div class="post-stats">
-                  <span class="view-count">{{ post.view_count || 0 }}点赞</span>
+                  <span class="view-count">{{ post.like_count || 0 }}点赞</span>
                   <span class="comment-count">
                     {{ post.comment_count || 0 }}评论
                   </span>
@@ -636,7 +636,6 @@ const getContentPreview = (content, summary) => {
   .pagination-container {
     display: flex;
     justify-content: center;
-    margin-top: 32px;
     padding: 20px 0;
   }
 
