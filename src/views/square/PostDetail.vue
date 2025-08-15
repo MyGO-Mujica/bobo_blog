@@ -19,6 +19,7 @@ import {
   addComment
 } from '@/api/square'
 import { formatDetailTime } from '@/utils/format'
+import CommentItem from './components/CommentItem.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -185,18 +186,36 @@ const submitComment = async () => {
 
     ElMessage.success('评论发表成功')
     newComment.value = ''
-    await loadComments() // 重新加载评论列表
-
-    // 更新帖子的评论数
-    if (post.value) {
-      post.value.comment_count += 1
-    }
+    handleCommentUpdate()
   } catch (error) {
     console.error('发表评论失败:', error)
     ElMessage.error('发表评论失败')
   } finally {
     commentLoading.value = false
   }
+}
+
+// 处理评论更新（新增/删除回复后）
+const handleCommentUpdate = async () => {
+  await loadComments() // 重新加载评论列表
+
+  // 更新帖子的评论数
+  if (post.value) {
+    const currentCommentCount = countAllComments(comments.value)
+    post.value.comment_count = currentCommentCount
+  }
+}
+
+// 递归计算所有评论数量（包括回复）
+const countAllComments = (commentList) => {
+  let count = 0
+  for (const comment of commentList) {
+    count += 1 // 当前评论
+    if (comment.replies && comment.replies.length > 0) {
+      count += countAllComments(comment.replies) // 递归计算回复
+    }
+  }
+  return count
 }
 
 // 格式化内容 - 将EditorJS JSON转换为HTML
@@ -429,7 +448,10 @@ const formatContent = (content) => {
 </script>
 
 <template>
-  <page-container :title="post?.title" class="post-detail-container">
+  <page-container
+    :title="post?.title || '帖子详情'"
+    class="post-detail-container"
+  >
     <div v-loading="loading" class="post-detail">
       <div v-if="post" class="post-content">
         <!-- 帖子头部信息 -->
@@ -484,7 +506,7 @@ const formatContent = (content) => {
             <h3>
               评论
               <span v-if="comments.length > 0" class="comment-count">
-                ({{ comments.length }})
+                ({{ post.comment_count }})
               </span>
             </h3>
           </div>
@@ -522,24 +544,19 @@ const formatContent = (content) => {
             <div v-if="comments.length === 0" class="empty-comments">
               暂无评论，快来发表第一个评论吧~
             </div>
-            <div v-else>
-              <!-- 这里后续会用评论组件替换 -->
-              <div
+            <div v-else class="comments-container">
+              <comment-item
                 v-for="comment in comments"
                 :key="comment.id"
-                class="comment-item"
-              >
-                <div class="comment-user">
-                  <el-avatar :size="30" :src="comment.user_pic" />
-                  <span class="comment-username">{{
-                    comment.nickname || comment.username
-                  }}</span>
-                  <span class="comment-time">{{
-                    formatDetailTime(comment.create_time)
-                  }}</span>
-                </div>
-                <div class="comment-content">{{ comment.content }}</div>
-              </div>
+                :comment="comment"
+                :post-id="route.params.id"
+                :current-user="userStore.user"
+                :current-user-avatar="
+                  userStore.user?.user_pic || '/src/assets/avatar.png'
+                "
+                @reply-success="handleCommentUpdate"
+                @delete-success="handleCommentUpdate"
+              />
             </div>
           </div>
         </div>
@@ -1171,34 +1188,15 @@ const formatContent = (content) => {
         padding: 40px 0;
       }
 
-      .comment-item {
-        border: 1px solid #f0f0f0;
-        border-radius: 6px;
-        padding: 16px;
-        margin-bottom: 12px;
+      .comments-container {
+        .comment-item {
+          border: 1px solid #f0f0f0;
+          border-radius: 6px;
+          padding: 20px;
 
-        .comment-user {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 8px;
-
-          .comment-username {
-            font-weight: 500;
-            color: #409eff;
-            font-size: 14px;
+          &:not(:last-child) {
+            margin-bottom: 16px;
           }
-
-          .comment-time {
-            color: #909399;
-            font-size: 12px;
-            margin-left: auto;
-          }
-        }
-
-        .comment-content {
-          color: #606266;
-          line-height: 1.6;
         }
       }
     }
