@@ -477,7 +477,7 @@ const formatContent = (content) => {
               placement="bottom-end"
               @command="handleCommand"
             >
-              <el-button text circle>
+              <el-button text circle class="more-btn">
                 <el-icon><More /></el-icon>
               </el-button>
               <template #dropdown>
@@ -623,7 +623,7 @@ const formatContent = (content) => {
 
 <style lang="scss" scoped>
 .post-detail-container {
-  max-width: 800px;
+  max-width: 720px;
   margin: 0 auto;
 
   :deep(.el-card__header) {
@@ -700,11 +700,35 @@ const formatContent = (content) => {
           background-color: white;
 
           &:hover {
-            color: #505153;
+            color: #00aeec;
             background-color: #f5f5f5;
           }
         }
       }
+    }
+  }
+
+  // More按钮样式 - 去掉所有状态的边框
+  :deep(.more-btn) {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+
+    &:hover,
+    &:focus,
+    &:active,
+    &.is-focus {
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      background-color: #ffffff;
+    }
+
+    // 确保点击后失去焦点时也没有边框
+    &:focus-visible {
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
     }
   }
 
@@ -1136,7 +1160,7 @@ const formatContent = (content) => {
   .comments-section {
     .comments-header {
       h3 {
-        margin: 0 0 20px 30px;
+        margin: 0 0 20px 20px;
         color: #303133;
 
         .comment-count {
@@ -1154,7 +1178,7 @@ const formatContent = (content) => {
       .comment-input-wrapper {
         display: flex;
         align-items: flex-start;
-        margin-left: 30px;
+        margin-left: 20px;
         gap: 20px;
 
         .el-input {
@@ -1190,9 +1214,9 @@ const formatContent = (content) => {
 
       .comments-container {
         .comment-item {
-          border: 1px solid #f0f0f0;
-          border-radius: 6px;
-          padding: 20px;
+          border-bottom: 1px solid #f0f0f0;
+          border-radius: 0;
+          padding: 0;
 
           &:not(:last-child) {
             margin-bottom: 16px;
@@ -1213,7 +1237,7 @@ const formatContent = (content) => {
 // B站风格侧边工具栏
 .side-toolbar {
   position: fixed;
-  right: 200px;
+  right: 240px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 1000;
@@ -1306,9 +1330,12 @@ const formatContent = (content) => {
     .toolbar-icon {
       svg {
         transition: all 0.3s ease;
+        fill: transparent;
+        stroke: #666;
       }
     }
 
+    // 已点赞状态：全蓝
     .toolbar-icon.active {
       color: #409eff;
 
@@ -1318,20 +1345,30 @@ const formatContent = (content) => {
       }
     }
 
-    &:hover .toolbar-icon.active {
-      color: #66b1ff;
+    // 已点赞状态的文字也变蓝
+    &:has(.toolbar-icon.active) .toolbar-text {
+      color: #409eff;
+    }
 
+    // 未点赞状态hover：蓝边框
+    &:hover .toolbar-icon:not(.active) {
       svg {
-        fill: #66b1ff;
-        stroke: #66b1ff;
+        fill: transparent;
+        stroke: #409eff;
       }
     }
 
-    // 未点赞状态的悬停效果
-    &:hover .toolbar-icon:not(.active) {
+    // 已点赞状态hover：蓝边框
+    &:hover .toolbar-icon.active {
       svg {
+        fill: transparent;
         stroke: #409eff;
       }
+    }
+
+    // 确保已点赞状态hover时文字保持蓝色
+    &:hover:has(.toolbar-icon.active) .toolbar-text {
+      color: #409eff;
     }
   }
 }
