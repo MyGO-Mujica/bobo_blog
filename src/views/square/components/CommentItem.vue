@@ -24,20 +24,33 @@
               formatDetailTime(comment.create_time)
             }}</span>
             <span class="action-btn" @click="toggleReply"> 回复 </span>
-            <span
-              v-if="canDelete"
-              class="action-btn delete-btn"
-              @click="handleDelete"
+          </div>
+
+          <!-- 操作下拉菜单 -->
+          <div v-if="canDelete" class="comment-more-actions">
+            <el-dropdown
+              trigger="hover"
+              placement="bottom-end"
+              @command="handleCommand"
             >
-              删除
-            </span>
+              <el-button text circle size="small" class="more-btn">
+                <el-icon><More /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="delete" class="delete-item">
+                    删除
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </div>
         </div>
 
         <!-- 回复表单 -->
         <div v-if="showReplyForm" class="reply-form">
           <div class="reply-input-wrapper">
-            <el-avatar :size="28" :src="currentUserAvatar" />
+            <el-avatar :size="24" :src="currentUserAvatar" />
             <div class="reply-input-container">
               <el-input
                 v-model="replyContent"
@@ -69,7 +82,7 @@
       <div v-for="reply in flatReplies" :key="reply.id" class="reply-item">
         <div class="reply-avatar">
           <el-avatar
-            :size="28"
+            :size="22"
             :src="reply.user_pic || '/src/assets/avatar.png'"
           />
         </div>
@@ -97,13 +110,26 @@
               <span class="action-btn" @click="replyToReply(reply)">
                 回复
               </span>
-              <span
-                v-if="canDeleteReply(reply)"
-                class="action-btn delete-btn"
-                @click="deleteReply(reply)"
+            </div>
+
+            <!-- 回复操作下拉菜单 -->
+            <div v-if="canDeleteReply(reply)" class="reply-more-actions">
+              <el-dropdown
+                trigger="hover"
+                placement="bottom-end"
+                @command="(command) => handleReplyCommand(command, reply)"
               >
-                删除
-              </span>
+                <el-button text circle size="small" class="more-btn">
+                  <el-icon><More /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="delete" class="delete-item">
+                      删除
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
             </div>
           </div>
         </div>
@@ -115,6 +141,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { More } from '@element-plus/icons-vue'
 import { addComment, deleteComment } from '@/api/square'
 import { formatDetailTime } from '@/utils/format'
 
@@ -182,6 +209,26 @@ const flatReplies = computed(() => {
 })
 
 // 方法
+const handleCommand = (command) => {
+  switch (command) {
+    case 'delete':
+      handleDelete()
+      break
+    default:
+      break
+  }
+}
+
+const handleReplyCommand = (command, reply) => {
+  switch (command) {
+    case 'delete':
+      deleteReply(reply)
+      break
+    default:
+      break
+  }
+}
+
 const toggleReply = () => {
   showReplyForm.value = !showReplyForm.value
   replyTarget.value = null // 重置回复目标为主评论
@@ -274,12 +321,7 @@ const deleteReply = async (reply) => {
 
 <style lang="scss" scoped>
 .comment-item {
-  border-bottom: 1px solid #e3e5e7;
   padding: 16px 0;
-
-  &:last-child {
-    border-bottom: none;
-  }
 
   .main-comment {
     display: flex;
@@ -301,23 +343,23 @@ const deleteReply = async (reply) => {
           color: #18191c;
           font-size: 14px;
           cursor: pointer;
-
-          &:hover {
-            color: #00aeec;
-          }
         }
       }
 
       .comment-content {
         color: #18191c;
         line-height: 1.6;
-        font-size: 14px;
+        font-size: 13px;
         word-wrap: break-word;
-        margin-bottom: 12px;
+        margin-bottom: 5px;
         white-space: pre-wrap;
       }
 
       .comment-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
         .comment-actions {
           display: flex;
           align-items: center;
@@ -337,70 +379,93 @@ const deleteReply = async (reply) => {
             &:hover {
               color: #00aeec;
             }
+          }
+        }
 
-            &.delete-btn:hover {
-              color: #ff6b6b;
+        .comment-more-actions {
+          opacity: 0;
+          transition: opacity 0.2s ease;
+
+          .el-button {
+            color: #9499a0;
+            padding: 4px;
+            background-color: transparent;
+
+            &:hover {
+              color: #00aeec;
+              background-color: transparent;
+            }
+
+            .el-icon {
+              font-size: 14px;
             }
           }
         }
       }
+    }
 
-      .reply-form {
-        margin-top: 12px;
-        padding: 12px;
-        background: #f6f7f8;
-        border-radius: 8px;
-        border: 1px solid #e3e5e7;
+    // 主评论hover时显示More按钮
+    &:hover {
+      .comment-footer .comment-more-actions {
+        opacity: 1;
+      }
+    }
 
-        .reply-input-wrapper {
-          display: flex;
-          gap: 8px;
+    .reply-form {
+      margin-top: 12px;
+      padding: 12px;
+      background: #f6f7f8;
+      border-radius: 8px;
+      border: 1px solid #e3e5e7;
 
-          .reply-input-container {
-            flex: 1;
+      .reply-input-wrapper {
+        display: flex;
+        gap: 8px;
 
-            .reply-input {
-              margin-bottom: 8px;
+        .reply-input-container {
+          flex: 1;
 
-              :deep(.el-textarea__inner) {
-                resize: none;
-                border: 1px solid #e3e5e7;
-                border-radius: 6px;
-                font-size: 13px;
-                line-height: 1.5;
-                padding: 8px 12px;
-                background: #ffffff;
+          .reply-input {
+            margin-bottom: 8px;
 
-                &:focus {
-                  border-color: #00aeec;
-                  box-shadow: 0 0 0 2px rgba(0, 174, 236, 0.1);
-                }
+            :deep(.el-textarea__inner) {
+              resize: none;
+              border: 1px solid #e3e5e7;
+              border-radius: 6px;
+              font-size: 13px;
+              line-height: 1.5;
+              padding: 8px 12px;
+              background: #ffffff;
 
-                &::placeholder {
-                  color: #9499a0;
-                }
+              &:focus {
+                border-color: #00aeec;
+                box-shadow: 0 0 0 2px rgba(0, 174, 236, 0.1);
+              }
+
+              &::placeholder {
+                color: #9499a0;
               }
             }
+          }
 
-            .reply-actions {
-              display: flex;
-              justify-content: flex-end;
-              gap: 8px;
+          .reply-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
 
-              .el-button {
-                font-size: 12px;
-                padding: 6px 16px;
-                height: 28px;
-                border-radius: 4px;
+            .el-button {
+              font-size: 12px;
+              padding: 6px 16px;
+              height: 28px;
+              border-radius: 4px;
 
-                &.el-button--primary {
-                  background-color: #00aeec;
-                  border-color: #00aeec;
+              &.el-button--primary {
+                background-color: #00aeec;
+                border-color: #00aeec;
 
-                  &:hover {
-                    background-color: #1db8f0;
-                    border-color: #1db8f0;
-                  }
+                &:hover {
+                  background-color: #1db8f0;
+                  border-color: #1db8f0;
                 }
               }
             }
@@ -409,41 +474,76 @@ const deleteReply = async (reply) => {
       }
     }
   }
+}
 
-  .replies-section {
-    margin-top: 16px;
-    padding-left: 48px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 12px;
+.replies-section {
+  padding-left: 48px;
+  padding: 8px 0 0 48px;
 
-    .reply-item {
-      display: flex;
-      gap: 8px;
-      padding: 8px 0;
+  .reply-item {
+    display: flex;
+    gap: 8px;
+    padding: 5px 0;
+    border &:not(:last-child) {
+      border-bottom: 1px solid #e3e5e7;
+      padding-bottom: 12px;
+      margin-bottom: 10px;
+    }
 
-      &:not(:last-child) {
-        border-bottom: 1px solid #e3e5e7;
-        padding-bottom: 12px;
+    .reply-avatar {
+      margin-top: 10px;
+      flex-shrink: 0;
+    }
+
+    .reply-body {
+      flex: 1;
+      min-width: 0;
+
+      .reply-header {
         margin-bottom: 4px;
+
+        .reply-username {
+          font-weight: 500;
+          color: #18191c;
+          font-size: 10px;
+          cursor: pointer;
+        }
       }
 
-      .reply-avatar {
-        flex-shrink: 0;
+      .reply-content {
+        color: #18191c;
+        line-height: 1.5;
+        font-size: 11px;
+        word-wrap: break-word;
+        margin-bottom: 6px;
+
+        .reply-target {
+          color: #00aeec;
+          font-weight: 500;
+          margin-right: 4px;
+        }
       }
 
-      .reply-body {
-        flex: 1;
-        min-width: 0;
+      .reply-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
 
-        .reply-header {
-          margin-bottom: 4px;
+        .reply-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
 
-          .reply-username {
-            font-weight: 500;
-            color: #18191c;
-            font-size: 13px;
+          .reply-time {
+            color: #9499a0;
+            font-size: 10px;
+          }
+
+          .action-btn {
+            color: #9499a0;
+            font-size: 10px;
             cursor: pointer;
+            transition: all 0.2s ease;
 
             &:hover {
               color: #00aeec;
@@ -451,48 +551,74 @@ const deleteReply = async (reply) => {
           }
         }
 
-        .reply-content {
-          color: #18191c;
-          line-height: 1.5;
-          font-size: 13px;
-          word-wrap: break-word;
-          margin-bottom: 6px;
+        .reply-more-actions {
+          opacity: 0;
+          transition: opacity 0.2s ease;
 
-          .reply-target {
-            color: #00aeec;
-            font-weight: 500;
-            margin-right: 4px;
-          }
-        }
+          :deep(.el-button) {
+            color: #9499a0;
+            padding: 2px;
+            background-color: transparent !important;
+            border: none !important;
 
-        .reply-footer {
-          .reply-actions {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-
-            .reply-time {
-              color: #9499a0;
-              font-size: 11px;
+            &:hover,
+            &:focus,
+            &:active,
+            &.is-focus {
+              color: #00aeec;
+              background-color: transparent !important;
+              border: none !important;
             }
 
-            .action-btn {
-              color: #9499a0;
-              font-size: 11px;
-              cursor: pointer;
-              transition: all 0.2s ease;
-
-              &:hover {
-                color: #00aeec;
-              }
-
-              &.delete-btn:hover {
-                color: #ff6b6b;
-              }
+            .el-icon {
+              font-size: 10px;
             }
           }
         }
       }
+    }
+
+    // 回复项hover时显示More按钮
+    &:hover {
+      .reply-footer .reply-more-actions {
+        opacity: 1;
+      }
+    }
+  }
+}
+
+// More按钮样式 - 去掉所有状态的边框
+:deep(.more-btn) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+
+  &:hover,
+  &:focus,
+  &:active,
+  &.is-focus {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+  }
+
+  // 确保点击后失去焦点时也没有边框
+  &:focus-visible {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+}
+
+// 下拉菜单样式
+:deep(.el-dropdown-menu) {
+  .delete-item {
+    color: #f56c6c;
+
+    &:hover {
+      color: #f56c6c;
+      background-color: #fef0f0;
     }
   }
 }
