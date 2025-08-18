@@ -3,13 +3,7 @@ import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import {
-  Delete,
-  View,
-  ChatRound,
-  More,
-  ArrowUpBold
-} from '@element-plus/icons-vue'
+import { Delete, ChatRound, More, ArrowUpBold } from '@element-plus/icons-vue'
 import {
   getPostDetail,
   likePost,
@@ -39,6 +33,11 @@ const canDelete = computed(() => {
   return (
     userStore.user.role === 'admin' || post.value.user_id === userStore.user.id
   )
+})
+
+// 判断当前登录用户是否为管理员
+const isCurrentUserAdmin = computed(() => {
+  return userStore.user?.role === 'admin'
 })
 
 onMounted(async () => {
@@ -457,12 +456,20 @@ const formatContent = (content) => {
         <!-- 帖子头部信息 -->
         <div class="post-header">
           <div class="user-info">
-            <el-avatar
-              :src="post.user_pic || '/src/assets/avatar.png'"
-              :size="50"
-            />
+            <div class="avatar-container">
+              <el-avatar
+                :src="post.user_pic || '/src/assets/avatar.png'"
+                :size="50"
+              />
+              <div v-if="isCurrentUserAdmin" class="admin-badge">大</div>
+            </div>
             <div class="user-details">
-              <div class="username">{{ post.username }}</div>
+              <div
+                class="username"
+                :class="{ 'admin-username': isCurrentUserAdmin }"
+              >
+                {{ post.username }}
+              </div>
               <div class="post-time">
                 {{ formatDetailTime(post.created_at) }}
               </div>
@@ -515,10 +522,13 @@ const formatContent = (content) => {
           <div class="comment-form">
             <div class="comment-input-wrapper">
               <div class="user-avatar-wrapper">
-                <el-avatar
-                  :src="userStore.user?.user_pic || '/src/assets/avatar.png'"
-                  :size="40"
-                />
+                <div class="avatar-container">
+                  <el-avatar
+                    :src="userStore.user?.user_pic || '/src/assets/avatar.png'"
+                    :size="40"
+                  />
+                  <div v-if="isCurrentUserAdmin" class="admin-badge">大</div>
+                </div>
               </div>
               <el-input
                 v-model="newComment"
@@ -600,12 +610,13 @@ const formatContent = (content) => {
         </div>
 
         <!-- 浏览量 -->
-        <div class="toolbar-item">
+        <!-- 以后再说 -->
+        <!-- <div class="toolbar-item"> 
           <div class="toolbar-icon">
             <el-icon><View /></el-icon>
           </div>
           <span class="toolbar-text">{{ post.view_count || 0 }}</span>
-        </div>
+        </div> -->
       </div>
 
       <!-- 返回顶部 - 单独显示 -->
@@ -677,11 +688,38 @@ const formatContent = (content) => {
       align-items: center;
       gap: 12px;
 
+      .avatar-container {
+        position: relative;
+        display: inline-block;
+
+        .admin-badge {
+          position: absolute;
+          bottom: -2px;
+          right: -2px;
+          background: #ff69b4;
+          color: white;
+          font-size: 10px;
+          font-weight: bold;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+      }
+
       .user-details {
         .username {
           font-weight: 500;
           color: #409eff;
           font-size: 16px;
+
+          &.admin-username {
+            color: #ff69b4;
+          }
         }
 
         .post-time {
@@ -1187,6 +1225,29 @@ const formatContent = (content) => {
 
         .user-avatar-wrapper {
           flex-shrink: 0;
+
+          .avatar-container {
+            position: relative;
+            display: inline-block;
+
+            .admin-badge {
+              position: absolute;
+              bottom: -2px;
+              right: -2px;
+              background: #ff69b4;
+              color: white;
+              font-size: 8px;
+              font-weight: bold;
+              width: 14px;
+              height: 14px;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border: 2px solid white;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            }
+          }
         }
       }
 
