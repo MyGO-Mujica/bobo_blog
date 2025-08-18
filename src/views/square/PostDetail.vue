@@ -35,7 +35,12 @@ const canDelete = computed(() => {
   )
 })
 
-// 判断当前登录用户是否为管理员
+// 判断帖子作者是否为管理员
+const isPostAuthorAdmin = computed(() => {
+  return post.value?.role === 'admin'
+})
+
+// 判断当前登录用户是否为管理员（用于评论表单）
 const isCurrentUserAdmin = computed(() => {
   return userStore.user?.role === 'admin'
 })
@@ -461,12 +466,12 @@ const formatContent = (content) => {
                 :src="post.user_pic || '/src/assets/avatar.png'"
                 :size="50"
               />
-              <div v-if="isCurrentUserAdmin" class="admin-badge">大</div>
+              <div v-if="isPostAuthorAdmin" class="admin-badge">大</div>
             </div>
             <div class="user-details">
               <div
                 class="username"
-                :class="{ 'admin-username': isCurrentUserAdmin }"
+                :class="{ 'admin-username': isPostAuthorAdmin }"
               >
                 {{ post.username }}
               </div>
