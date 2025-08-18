@@ -3,17 +3,23 @@
     <!-- 主评论 -->
     <div class="main-comment">
       <div class="comment-avatar">
-        <el-avatar
-          :size="36"
-          :src="comment.user_pic || '/src/assets/avatar.png'"
-        />
+        <div class="avatar-container">
+          <el-avatar
+            :size="36"
+            :src="comment.user_pic || '/src/assets/avatar.png'"
+          />
+          <div v-if="isCommentUserAdmin" class="admin-badge">大</div>
+        </div>
       </div>
 
       <div class="comment-body">
         <div class="comment-header">
-          <span class="comment-username">{{
-            comment.nickname || comment.username
-          }}</span>
+          <span
+            class="comment-username"
+            :class="{ 'admin-username': isCommentUserAdmin }"
+          >
+            {{ comment.nickname || comment.username }}
+          </span>
         </div>
 
         <div class="comment-content">{{ comment.content }}</div>
@@ -50,7 +56,10 @@
         <!-- 回复表单 -->
         <div v-if="showReplyForm" class="reply-form">
           <div class="reply-input-wrapper">
-            <el-avatar :size="24" :src="currentUserAvatar" />
+            <div class="avatar-container">
+              <el-avatar :size="24" :src="currentUserAvatar" />
+              <div v-if="isCurrentUserAdmin" class="admin-badge">大</div>
+            </div>
             <div class="reply-input-container">
               <el-input
                 v-model="replyContent"
@@ -81,17 +90,23 @@
     <div v-if="flatReplies && flatReplies.length > 0" class="replies-section">
       <div v-for="reply in flatReplies" :key="reply.id" class="reply-item">
         <div class="reply-avatar">
-          <el-avatar
-            :size="22"
-            :src="reply.user_pic || '/src/assets/avatar.png'"
-          />
+          <div class="avatar-container">
+            <el-avatar
+              :size="22"
+              :src="reply.user_pic || '/src/assets/avatar.png'"
+            />
+            <div v-if="isReplyUserAdmin(reply)" class="admin-badge">大</div>
+          </div>
         </div>
 
         <div class="reply-body">
           <div class="reply-header">
-            <span class="reply-username">{{
-              reply.nickname || reply.username
-            }}</span>
+            <span
+              class="reply-username"
+              :class="{ 'admin-username': isReplyUserAdmin(reply) }"
+            >
+              {{ reply.nickname || reply.username }}
+            </span>
           </div>
 
           <div class="reply-content">
@@ -180,6 +195,21 @@ const canDelete = computed(() => {
     props.comment.user_id === props.currentUser.id
   )
 })
+
+// 判断主评论用户是否为管理员
+const isCommentUserAdmin = computed(() => {
+  return props.comment.role === 'admin'
+})
+
+// 判断当前登录用户是否为管理员（用于回复表单）
+const isCurrentUserAdmin = computed(() => {
+  return props.currentUser?.role === 'admin'
+})
+
+// 判断回复用户是否为管理员
+const isReplyUserAdmin = (reply) => {
+  return reply.role === 'admin'
+}
 
 // 扁平化所有回复，将嵌套结构转换为一层
 const flatReplies = computed(() => {
@@ -329,6 +359,29 @@ const deleteReply = async (reply) => {
 
     .comment-avatar {
       flex-shrink: 0;
+
+      .avatar-container {
+        position: relative;
+        display: inline-block;
+
+        .admin-badge {
+          position: absolute;
+          bottom: -2px;
+          right: -2px;
+          background: #ff69b4;
+          color: white;
+          font-size: 8px;
+          font-weight: bold;
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+      }
     }
 
     .comment-body {
@@ -343,6 +396,10 @@ const deleteReply = async (reply) => {
           color: #18191c;
           font-size: 12px;
           cursor: pointer;
+
+          &.admin-username {
+            color: #ff69b4;
+          }
         }
       }
 
@@ -422,6 +479,30 @@ const deleteReply = async (reply) => {
         display: flex;
         gap: 8px;
 
+        .avatar-container {
+          position: relative;
+          display: inline-block;
+          flex-shrink: 0;
+
+          .admin-badge {
+            position: absolute;
+            bottom: -1px;
+            right: -1px;
+            background: #ff69b4;
+            color: white;
+            font-size: 6px;
+            font-weight: bold;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+          }
+        }
+
         .reply-input-container {
           flex: 1;
 
@@ -493,6 +574,29 @@ const deleteReply = async (reply) => {
     .reply-avatar {
       margin-top: 10px;
       flex-shrink: 0;
+
+      .avatar-container {
+        position: relative;
+        display: inline-block;
+
+        .admin-badge {
+          position: absolute;
+          bottom: -1px;
+          right: -1px;
+          background: #ff69b4;
+          color: white;
+          font-size: 6px;
+          font-weight: bold;
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid white;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+      }
     }
 
     .reply-body {
@@ -507,81 +611,85 @@ const deleteReply = async (reply) => {
           color: #18191c;
           font-size: 9px;
           cursor: pointer;
-        }
-      }
 
-      .reply-content {
-        color: #18191c;
-        line-height: 1.5;
-        font-size: 11px;
-        word-wrap: break-word;
-
-        .reply-target {
-          color: #00aeec;
-          font-weight: 500;
-          margin-right: 4px;
-        }
-      }
-
-      .reply-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        .reply-actions {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-
-          .reply-time {
-            color: #9499a0;
-            font-size: 9px;
-          }
-
-          .action-btn {
-            color: #9499a0;
-            font-size: 9px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-
-            &:hover {
-              color: #00aeec;
-            }
-          }
-        }
-
-        .reply-more-actions {
-          opacity: 0;
-          transition: opacity 0.2s ease;
-
-          :deep(.el-button) {
-            color: #9499a0;
-            padding: 2px;
-            background-color: transparent !important;
-            border: none !important;
-
-            &:hover,
-            &:focus,
-            &:active,
-            &.is-focus {
-              color: #00aeec;
-              background-color: transparent !important;
-              border: none !important;
-            }
-
-            .el-icon {
-              font-size: 10px;
-            }
+          &.admin-username {
+            color: #ff69b4;
           }
         }
       }
     }
 
-    // 回复项hover时显示More按钮
-    &:hover {
-      .reply-footer .reply-more-actions {
-        opacity: 1;
+    .reply-content {
+      color: #18191c;
+      line-height: 1.5;
+      font-size: 11px;
+      word-wrap: break-word;
+
+      .reply-target {
+        color: #00aeec;
+        font-weight: 500;
+        margin-right: 4px;
       }
+    }
+
+    .reply-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .reply-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .reply-time {
+          color: #9499a0;
+          font-size: 9px;
+        }
+
+        .action-btn {
+          color: #9499a0;
+          font-size: 9px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover {
+            color: #00aeec;
+          }
+        }
+      }
+
+      .reply-more-actions {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+
+        :deep(.el-button) {
+          color: #9499a0;
+          padding: 2px;
+          background-color: transparent !important;
+          border: none !important;
+
+          &:hover,
+          &:focus,
+          &:active,
+          &.is-focus {
+            color: #00aeec;
+            background-color: transparent !important;
+            border: none !important;
+          }
+
+          .el-icon {
+            font-size: 10px;
+          }
+        }
+      }
+    }
+  }
+
+  // 回复项hover时显示More按钮
+  &:hover {
+    .reply-footer .reply-more-actions {
+      opacity: 1;
     }
   }
 }
