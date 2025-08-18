@@ -336,12 +336,12 @@ const deleteReply = async (reply) => {
       min-width: 0;
 
       .comment-header {
-        margin-bottom: 8px;
+        margin-bottom: 5px;
 
         .comment-username {
-          font-weight: 500;
+          font-weight: 700;
           color: #18191c;
-          font-size: 14px;
+          font-size: 12px;
           cursor: pointer;
         }
       }
@@ -349,9 +349,9 @@ const deleteReply = async (reply) => {
       .comment-content {
         color: #18191c;
         line-height: 1.6;
-        font-size: 13px;
+        font-size: 14px;
         word-wrap: break-word;
-        margin-bottom: 5px;
+        margin-bottom: 2px;
         white-space: pre-wrap;
       }
 
@@ -367,12 +367,12 @@ const deleteReply = async (reply) => {
 
           .comment-time {
             color: #9499a0;
-            font-size: 12px;
+            font-size: 10px;
           }
 
           .action-btn {
             color: #9499a0;
-            font-size: 12px;
+            font-size: 10px;
             cursor: pointer;
             transition: all 0.2s ease;
 
@@ -503,9 +503,9 @@ const deleteReply = async (reply) => {
         margin-bottom: 4px;
 
         .reply-username {
-          font-weight: 500;
+          font-weight: 700;
           color: #18191c;
-          font-size: 10px;
+          font-size: 9px;
           cursor: pointer;
         }
       }
@@ -515,7 +515,6 @@ const deleteReply = async (reply) => {
         line-height: 1.5;
         font-size: 11px;
         word-wrap: break-word;
-        margin-bottom: 6px;
 
         .reply-target {
           color: #00aeec;
@@ -536,12 +535,12 @@ const deleteReply = async (reply) => {
 
           .reply-time {
             color: #9499a0;
-            font-size: 10px;
+            font-size: 9px;
           }
 
           .action-btn {
             color: #9499a0;
-            font-size: 10px;
+            font-size: 9px;
             cursor: pointer;
             transition: all 0.2s ease;
 
