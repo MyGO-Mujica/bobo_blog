@@ -519,8 +519,8 @@ const deleteReply = async (reply) => {
               background: #ffffff;
 
               &:focus {
-                border-color: #00aeec;
-                box-shadow: 0 0 0 2px rgba(0, 174, 236, 0.1);
+                border-color: rgba(50, 50, 50, 0.1);
+                box-shadow: #9499a0 0 0 0 2px rgba(50, 50, 50, 0.1);
               }
 
               &::placeholder {
@@ -684,12 +684,12 @@ const deleteReply = async (reply) => {
         }
       }
     }
-  }
 
-  // 回复项hover时显示More按钮
-  &:hover {
-    .reply-footer .reply-more-actions {
-      opacity: 1;
+    // 回复项hover时显示More按钮
+    &:hover {
+      .reply-footer .reply-more-actions {
+        opacity: 1;
+      }
     }
   }
 }
