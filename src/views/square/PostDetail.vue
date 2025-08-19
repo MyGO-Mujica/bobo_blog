@@ -1258,14 +1258,14 @@ const formatContent = (content) => {
 
       :deep(.el-textarea__inner) {
         resize: none;
-        height: 40px !important;
-        width: 95%;
+        min-height: 40px !important;
+        width: 93%;
         line-height: 1.6;
-        padding: 8px 12px;
+        padding: 8px 15px;
       }
 
       .form-actions {
-        margin: 15px 32px;
+        margin: 15px 40px;
         display: flex;
         justify-content: flex-end;
       }
