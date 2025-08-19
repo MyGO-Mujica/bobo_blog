@@ -378,7 +378,7 @@ const deleteReply = async (reply) => {
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 2px solid white;
+          border: 1.5px solid white;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
       }
@@ -486,8 +486,8 @@ const deleteReply = async (reply) => {
 
           .admin-badge {
             position: absolute;
-            bottom: -1px;
-            right: -1px;
+            right: -2px;
+            top: 16px;
             background: #ff69b4;
             color: white;
             font-size: 6px;
@@ -498,7 +498,7 @@ const deleteReply = async (reply) => {
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid white;
+            border: 1.5px solid white;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
           }
         }
@@ -593,7 +593,7 @@ const deleteReply = async (reply) => {
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid white;
+          border: 1.5px solid white;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
       }
