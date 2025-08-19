@@ -711,7 +711,7 @@ const formatContent = (content) => {
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 2px solid white;
+          border: 1.5px solid white;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
       }
@@ -1249,7 +1249,7 @@ const formatContent = (content) => {
               display: flex;
               align-items: center;
               justify-content: center;
-              border: 2px solid white;
+              border: 1.5px solid white;
               box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
             }
           }
