@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { Delete, Edit, Picture } from '@element-plus/icons-vue'
+import { Delete, Edit, Picture, Share } from '@element-plus/icons-vue'
 import ChannelSelect from './components/ChannelSelect.vue'
 import ArticleEdit from './components/ArticleEdit.vue'
 import {
@@ -8,6 +8,7 @@ import {
   artDelService,
   artSearchService
 } from '@/api/article.js'
+import { createPost } from '@/api/square.js'
 import { formatRelativeTime, formatDetailTime } from '@/utils/format.js'
 import { baseURL } from '@/utils/request'
 import { useUserStore } from '@/stores'
@@ -30,6 +31,15 @@ const params = ref({
 // 预览对话框相关
 const previewDialogVisible = ref(false)
 const previewArticle = ref({})
+
+// 分享对话框相关
+const shareDialogVisible = ref(false)
+const shareArticle = ref({})
+const shareForm = ref({
+  title: '',
+  cover_img: ''
+})
+const shareLoading = ref(false)
 
 // 全局统计信息
 const globalStats = ref({
@@ -157,6 +167,97 @@ const onSuccess = (type) => {
 const onPreviewArticle = (row) => {
   previewArticle.value = row
   previewDialogVisible.value = true
+}
+
+// 分享文章到广场
+const onShareArticle = (row) => {
+  // 只允许分享已发布的文章
+  if (row.state !== '已发布') {
+    ElMessage.warning('只能分享已发布的文章')
+    return
+  }
+
+  shareArticle.value = row
+  shareForm.value = {
+    title: row.title, // 默认使用文章标题
+    cover_img: row.cover_img || ''
+  }
+  shareDialogVisible.value = true
+}
+
+// 将图片URL转换为base64格式
+const convertImageToBase64 = async (imageUrl) => {
+  try {
+    // 如果已经是base64格式，直接返回
+    if (imageUrl.startsWith('data:')) {
+      return imageUrl
+    }
+
+    // 如果是相对路径，补全为完整URL
+    const fullUrl = imageUrl.startsWith('http') ? imageUrl : baseURL + imageUrl
+
+    const response = await fetch(fullUrl)
+    const blob = await response.blob()
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  } catch (error) {
+    console.error('图片转换失败:', error)
+    return ''
+  }
+}
+
+// 确认分享文章
+const confirmShareArticle = async () => {
+  shareLoading.value = true
+
+  try {
+    // 准备发布参数，直接使用文章内容
+    const postData = {
+      article_id: shareArticle.value.id, // 关联文章ID
+      title: shareForm.value.title,
+      content: shareArticle.value.content || '' // 直接使用原文章内容
+    }
+
+    // 如果有封面图片，转换为base64格式
+    if (shareArticle.value.cover_img) {
+      const base64Image = await convertImageToBase64(
+        shareArticle.value.cover_img
+      )
+      if (base64Image) {
+        postData.cover_img = base64Image
+      }
+    }
+
+    await createPost(postData)
+
+    ElMessage.success('文章分享到广场成功！')
+    shareDialogVisible.value = false
+
+    // 重置表单
+    shareForm.value = {
+      title: '',
+      cover_img: ''
+    }
+  } catch (error) {
+    console.error('分享文章失败:', error)
+    ElMessage.error('分享失败，请重试')
+  } finally {
+    shareLoading.value = false
+  }
+}
+
+// 取消分享
+const cancelShare = () => {
+  shareDialogVisible.value = false
+  shareForm.value = {
+    title: '',
+    cover_img: ''
+  }
 }
 
 // 获取文章内容预览（优先使用后端返回的summary）
@@ -451,10 +552,20 @@ const renderEditorContent = (content) => {
       </el-table-column>
 
       <!-- 操作列 -->
-      <el-table-column label="操作" width="120" align="center" fixed="right">
+      <el-table-column label="操作" width="160" align="center" fixed="right">
         <template #default="{ row }">
           <div class="action-buttons">
-            <!-- 预览按钮已移除，点击文章信息列即可预览 -->
+            <!-- 分享按钮 - 只对已发布的文章显示 -->
+            <el-button
+              v-if="row.state === '已发布'"
+              circle
+              plain
+              size="small"
+              type="success"
+              :icon="Share"
+              @click="onShareArticle(row)"
+              title="分享到广场"
+            />
             <el-button
               circle
               plain
@@ -500,6 +611,57 @@ const renderEditorContent = (content) => {
 
     <!-- 添加编辑的抽屉 -->
     <article-edit ref="articleEditRef" @success="onSuccess"></article-edit>
+
+    <!-- 分享文章对话框 -->
+    <el-dialog
+      v-model="shareDialogVisible"
+      title="分享文章到广场"
+      width="500px"
+      center
+      :close-on-click-modal="false"
+    >
+      <div class="share-content">
+        <!-- 文章信息展示 -->
+        <div class="article-info-display">
+          <div class="article-title-display">
+            {{ shareArticle.title }}
+          </div>
+          <div class="article-meta-display">
+            <el-tag type="info" size="small">{{
+              shareArticle.cate_name
+            }}</el-tag>
+            <span class="article-date">{{
+              formatDetailTime(shareArticle.pub_date)
+            }}</span>
+          </div>
+        </div>
+
+        <!-- 分享表单 -->
+        <el-form :model="shareForm" label-width="80px" style="margin-top: 20px">
+          <el-form-item label="帖子标题" required>
+            <el-input
+              v-model="shareForm.title"
+              placeholder="请输入帖子标题"
+              maxlength="50"
+              show-word-limit
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="cancelShare">取消</el-button>
+          <el-button
+            type="primary"
+            @click="confirmShareArticle"
+            :loading="shareLoading"
+          >
+            {{ shareLoading ? '分享中...' : '分享到广场' }}
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
 
     <!-- 文章预览对话框 -->
     <el-dialog
@@ -601,6 +763,14 @@ const renderEditorContent = (content) => {
     color: #333;
     margin-bottom: 8px;
 
+    .article-title-text {
+      display: inline-block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .el-link {
       font-weight: inherit;
 
@@ -648,6 +818,35 @@ const renderEditorContent = (content) => {
   display: flex;
   gap: 4px;
   justify-content: center;
+}
+
+// 分享对话框样式
+.share-content {
+  .article-info-display {
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #409eff;
+
+    .article-title-display {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .article-meta-display {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .article-date {
+        color: #666;
+        font-size: 12px;
+      }
+    }
+  }
 }
 
 .preview-content {
