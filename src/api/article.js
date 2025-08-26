@@ -47,3 +47,9 @@ export const artUploadImageService = (file) => {
   formData.append('image', file)
   return request.post('/my/article/upload/image', formData)
 }
+
+// 文章：获取用户已发布的文章列表（用于分享到广场）
+export const getUserPublishedArticlesService = (params) =>
+  request.get('/my/article/published', {
+    params
+  })
