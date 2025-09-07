@@ -354,10 +354,16 @@ const deleteReply = async (reply) => {
 <style lang="scss" scoped>
 .comment-item {
   padding: 16px 0;
+  border-bottom: 1px solid #bec2cc;
+
+  &:last-child {
+    border-bottom: none;
+  }
 
   .main-comment {
     display: flex;
-    gap: 12px;
+    gap: 15px;
+    padding: 0 10px;
 
     .comment-avatar {
       flex-shrink: 0;
