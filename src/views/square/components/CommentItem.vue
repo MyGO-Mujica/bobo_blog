@@ -33,8 +33,9 @@
           </div>
 
           <!-- 操作下拉菜单 -->
-          <div v-if="canDelete" class="comment-more-actions">
+          <div class="comment-more-actions">
             <el-dropdown
+              v-if="canDelete"
               trigger="hover"
               placement="bottom-end"
               @command="handleCommand"
@@ -128,8 +129,9 @@
             </div>
 
             <!-- 回复操作下拉菜单 -->
-            <div v-if="canDeleteReply(reply)" class="reply-more-actions">
+            <div class="reply-more-actions">
               <el-dropdown
+                v-if="canDeleteReply(reply)"
                 trigger="hover"
                 placement="bottom-end"
                 @command="(command) => handleReplyCommand(command, reply)"
@@ -408,7 +410,7 @@ const deleteReply = async (reply) => {
         line-height: 1.6;
         font-size: 14px;
         word-wrap: break-word;
-        margin-bottom: 2px;
+        margin-bottom: 1px; /* 减小与时间的距离 */
         white-space: pre-wrap;
       }
 
@@ -416,6 +418,7 @@ const deleteReply = async (reply) => {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        min-height: 24px; /* 确保固定的最小高度，避免布局差异 */
 
         .comment-actions {
           display: flex;
@@ -442,6 +445,11 @@ const deleteReply = async (reply) => {
         .comment-more-actions {
           opacity: 0;
           transition: opacity 0.2s ease;
+          width: 28px; /* 固定宽度，确保布局一致性 */
+          height: 24px; /* 固定高度 */
+          display: flex;
+          align-items: center;
+          justify-content: center;
 
           .el-button {
             color: #9499a0;
@@ -568,7 +576,6 @@ const deleteReply = async (reply) => {
     border &:not(:last-child) {
       border-bottom: 1px solid #e3e5e7;
       padding-bottom: 12px;
-      margin-bottom: 10px;
     }
 
     .reply-avatar {
@@ -604,7 +611,7 @@ const deleteReply = async (reply) => {
       min-width: 0;
 
       .reply-header {
-        margin-bottom: 4px;
+        margin-bottom: 5px;
 
         .reply-username {
           font-weight: 700;
@@ -636,6 +643,7 @@ const deleteReply = async (reply) => {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      min-height: 20px; /* 确保固定的最小高度，避免布局差异 */
 
       .reply-actions {
         display: flex;
