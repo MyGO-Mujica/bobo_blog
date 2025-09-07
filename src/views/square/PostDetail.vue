@@ -1215,6 +1215,15 @@ const formatContent = (content) => {
       }
     }
 
+    .comments-list {
+      .empty-comments {
+        text-align: center;
+        color: #909399;
+        padding: 40px 0;
+        font-size: 14px;
+      }
+    }
+
     .comment-form {
       margin-bottom: 32px;
 
@@ -1268,26 +1277,6 @@ const formatContent = (content) => {
         margin: 15px 40px;
         display: flex;
         justify-content: flex-end;
-      }
-    }
-
-    .comments-list {
-      .empty-comments {
-        text-align: center;
-        color: #909399;
-        padding: 40px 0;
-      }
-
-      .comments-container {
-        .comment-item {
-          border-bottom: 1px solid #f0f0f0;
-          border-radius: 0;
-          padding: 0;
-
-          &:not(:last-child) {
-            margin-bottom: 16px;
-          }
-        }
       }
     }
   }
