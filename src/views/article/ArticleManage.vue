@@ -235,7 +235,7 @@ const confirmShareArticle = async () => {
 
     await createPost(postData)
 
-    ElMessage.success('文章分享到广场成功！')
+    ElMessage.success('文章已分享到广场')
     shareDialogVisible.value = false
 
     // 重置表单
