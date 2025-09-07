@@ -14,7 +14,7 @@ const userStore = useUserStore()
 const loading = ref(false)
 const posts = ref([])
 const currentPage = ref(1)
-const pageSize = ref(20)
+const pageSize = ref(6)
 const total = ref(0)
 
 // 权限相关
@@ -45,8 +45,9 @@ const loadPosts = async () => {
 
     const data = res.data?.data || res.data
 
-    posts.value = data.posts || data.content || data || []
-    total.value = data.total || data.totalElements || posts.value.length
+    // 处理新的后端响应格式：{ posts: [...], total: 9, currentPage: 1, pageSize: 6, totalPages: 2 }
+    posts.value = data.posts || []
+    total.value = data.total || 0
   } catch (error) {
     console.error('加载帖子失败:', error)
     console.error('错误详情:', error.response?.data)
@@ -398,7 +399,7 @@ const getContentPreview = (content, summary) => {
             v-model:current-page="currentPage"
             :page-size="pageSize"
             :total="total"
-            layout="total, prev, pager, next, jumper"
+            layout="prev, pager, next, jumper"
             @current-change="handlePageChange"
           />
         </div>
@@ -490,11 +491,16 @@ const getContentPreview = (content, summary) => {
 }
 
 .posts-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 600px; /* 确保容器有最小高度 */
+
   .post-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
     margin-bottom: 24px;
+    flex: 1; /* 让帖子网格占据剩余空间 */
   }
 
   .post-card {
@@ -636,7 +642,7 @@ const getContentPreview = (content, summary) => {
   .pagination-container {
     display: flex;
     justify-content: center;
-    padding: 20px 0;
+    padding: 30px 0;
   }
 
   /* 响应式布局 */
