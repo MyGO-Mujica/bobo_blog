@@ -428,7 +428,7 @@ const deleteReply = async (reply) => {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        min-height: 24px; /* 确保固定的最小高度，避免布局差异 */
+        height: 18px; /* 确保固定的最小高度，避免布局差异 */
 
         .comment-actions {
           display: flex;
