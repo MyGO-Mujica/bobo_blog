@@ -1225,7 +1225,7 @@ const formatContent = (content) => {
     }
 
     .comment-form {
-      margin-bottom: 32px;
+      margin-bottom: 15px;
 
       .comment-input-wrapper {
         display: flex;
