@@ -66,7 +66,11 @@
                 v-model="replyContent"
                 type="textarea"
                 :autosize="{ minRows: 2, maxRows: 4 }"
-                :placeholder="`回复 @${comment.nickname || comment.username}`"
+                :placeholder="`回复 @${
+                  replyTarget
+                    ? replyTarget.nickname || replyTarget.username
+                    : comment.nickname || comment.username
+                }`"
                 class="reply-input"
               />
               <div class="reply-actions">
@@ -353,7 +357,7 @@ const deleteReply = async (reply) => {
 
 <style lang="scss" scoped>
 .comment-item {
-  padding: 16px 0;
+  padding: 16px 10px;
   border-bottom: 1px solid #bec2cc;
 
   &:last-child {
@@ -402,7 +406,7 @@ const deleteReply = async (reply) => {
         .comment-username {
           font-weight: 700;
           color: #18191c;
-          font-size: 12px;
+          font-size: 13px;
           cursor: pointer;
 
           &.admin-username {
@@ -622,7 +626,7 @@ const deleteReply = async (reply) => {
         .reply-username {
           font-weight: 700;
           color: #18191c;
-          font-size: 9px;
+          font-size: 11px;
           cursor: pointer;
 
           &.admin-username {
@@ -635,7 +639,7 @@ const deleteReply = async (reply) => {
     .reply-content {
       color: #18191c;
       line-height: 1.5;
-      font-size: 11px;
+      font-size: 12px;
       word-wrap: break-word;
 
       .reply-target {
