@@ -188,12 +188,12 @@ const submitComment = async () => {
       content: newComment.value.trim()
     })
 
-    ElMessage.success('评论发表成功')
+    ElMessage.success('发送成功')
     newComment.value = ''
     handleCommentUpdate()
   } catch (error) {
-    console.error('发表评论失败:', error)
-    ElMessage.error('发表评论失败')
+    console.error('发送失败:', error)
+    ElMessage.error('发送失败')
   } finally {
     commentLoading.value = false
   }
@@ -545,9 +545,9 @@ const formatContent = (content) => {
             <div class="form-actions">
               <el-button
                 @click="submitComment"
-                type="primary"
                 :loading="commentLoading"
                 :disabled="!newComment.trim()"
+                class="submit-btn"
               >
                 发表
               </el-button>
@@ -1277,6 +1277,32 @@ const formatContent = (content) => {
         margin: 15px 40px;
         display: flex;
         justify-content: flex-end;
+
+        .submit-btn {
+          background-color: #6c6e74;
+          border-color: #909399;
+          color: #fff;
+          transition: background 0.2s, color 0.2s;
+
+          &:hover {
+            background-color: #575555;
+            color: #ffffff;
+            border-color: #909399;
+          }
+
+          &:disabled {
+            background-color: #c0c4cc;
+            border-color: #c0c4cc;
+            color: #fff;
+            cursor: not-allowed;
+
+            &:hover {
+              background-color: #b2b4b8;
+              border-color: #c0c4cc;
+              color: white;
+            }
+          }
+        }
       }
     }
   }
