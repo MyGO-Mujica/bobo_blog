@@ -77,7 +77,7 @@
                 <el-button size="small" @click="cancelReply">取消</el-button>
                 <el-button
                   size="small"
-                  type="primary"
+                  class="reply-btn"
                   :loading="replyLoading"
                   :disabled="!replyContent.trim()"
                   @click="submitReply"
@@ -296,14 +296,14 @@ const submitReply = async () => {
       parentId: replyTarget.value ? replyTarget.value.id : props.comment.id
     })
 
-    ElMessage.success('回复发表成功')
+    ElMessage.success('发送成功')
     replyContent.value = ''
     showReplyForm.value = false
     replyTarget.value = null
     emit('reply-success')
   } catch (error) {
-    console.error('发表回复失败:', error)
-    ElMessage.error('发表回复失败')
+    console.error('发送失败:', error)
+    ElMessage.error('发送失败')
   } finally {
     replyLoading.value = false
   }
@@ -362,6 +362,7 @@ const deleteReply = async (reply) => {
 
   &:last-child {
     border-bottom: none;
+    margin-bottom: 30px;
   }
 
   .main-comment {
@@ -552,20 +553,23 @@ const deleteReply = async (reply) => {
             justify-content: flex-end;
             gap: 8px;
 
-            .el-button {
-              font-size: 12px;
-              padding: 6px 16px;
-              height: 28px;
-              border-radius: 4px;
+            .reply-btn {
+              background-color: #6c6e74;
+              border-color: #909399;
+              color: #fff;
+              transition: background 0.2s, color 0.2s;
 
-              &.el-button--primary {
-                background-color: #00aeec;
-                border-color: #00aeec;
+              &:hover {
+                background-color: #575555;
+                color: #ffffff;
+                border-color: #909399;
+              }
 
-                &:hover {
-                  background-color: #1db8f0;
-                  border-color: #1db8f0;
-                }
+              &:disabled {
+                background-color: #c0c4cc;
+                border-color: #c0c4cc;
+                color: #fff;
+                cursor: not-allowed;
               }
             }
           }
