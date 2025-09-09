@@ -82,7 +82,7 @@
                   :disabled="!replyContent.trim()"
                   @click="submitReply"
                 >
-                  回复
+                  发布
                 </el-button>
               </div>
             </div>
@@ -569,7 +569,7 @@ const deleteReply = async (reply) => {
                 background-color: #c0c4cc;
                 border-color: #c0c4cc;
                 color: #fff;
-                cursor: not-allowed;
+                cursor: default;
               }
             }
           }
