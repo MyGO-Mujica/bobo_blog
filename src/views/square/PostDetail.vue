@@ -549,7 +549,7 @@ const formatContent = (content) => {
                 :disabled="!newComment.trim()"
                 class="submit-btn"
               >
-                发表
+                发布
               </el-button>
             </div>
           </div>
@@ -557,7 +557,7 @@ const formatContent = (content) => {
           <!-- 评论列表 -->
           <div class="comments-list">
             <div v-if="comments.length === 0" class="empty-comments">
-              暂无评论，快来发表第一个评论吧~
+              暂无评论，快来发表布一个评论吧~
             </div>
             <div v-else class="comments-container">
               <comment-item
@@ -1294,7 +1294,7 @@ const formatContent = (content) => {
             background-color: #c0c4cc;
             border-color: #c0c4cc;
             color: #fff;
-            cursor: not-allowed;
+            cursor: default;
 
             &:hover {
               background-color: #b2b4b8;
