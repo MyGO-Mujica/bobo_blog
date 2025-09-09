@@ -1,5 +1,66 @@
 <template>
-  <div class="comment-item">
+  <!-- 如果是作为评论系统的根组件使用 -->
+  <div v-if="isCommentSystem" class="comment-system">
+    <!-- 评论区域标题 -->
+    <div class="comments-header">
+      <h3>
+        评论
+        <span v-if="comments.length > 0" class="comment-count">
+          ({{ totalCommentCount }})
+        </span>
+      </h3>
+    </div>
+
+    <!-- 发表评论表单 -->
+    <div class="comment-form">
+      <div class="comment-input-wrapper">
+        <div class="user-avatar-wrapper">
+          <div class="avatar-container">
+            <el-avatar :src="currentUserAvatar" :size="40" />
+            <div v-if="isCurrentUserAdmin" class="admin-badge">大</div>
+          </div>
+        </div>
+        <el-input
+          v-model="newComment"
+          type="textarea"
+          :autosize="{ minRows: 1, maxRows: 6 }"
+          placeholder="写下你的想法..."
+        />
+      </div>
+      <div class="form-actions">
+        <el-button
+          @click="submitNewComment"
+          :loading="newCommentLoading"
+          :disabled="!newComment.trim()"
+          class="submit-btn"
+        >
+          发布
+        </el-button>
+      </div>
+    </div>
+
+    <!-- 评论列表 -->
+    <div class="comments-list">
+      <div v-if="comments.length === 0" class="empty-comments">
+        暂无评论，快来发表第一个评论吧~
+      </div>
+      <div v-else class="comments-container">
+        <comment-item
+          v-for="comment in comments"
+          :key="comment.id"
+          :comment="comment"
+          :post-id="postId"
+          :current-user="currentUser"
+          :current-user-avatar="currentUserAvatar"
+          @reply-success="handleCommentUpdate"
+          @delete-success="handleCommentUpdate"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- 原有的单个评论项组件 -->
+  <div v-else class="comment-item">
     <!-- 主评论 -->
     <div class="main-comment">
       <div class="comment-avatar">
@@ -167,9 +228,10 @@ import { addComment, deleteComment } from '@/api/square'
 import { formatDetailTime } from '@/utils/format'
 
 const props = defineProps({
+  // 原有的单个评论项props
   comment: {
     type: Object,
-    required: true
+    default: null
   },
   postId: {
     type: [String, Number],
@@ -182,10 +244,23 @@ const props = defineProps({
   currentUserAvatar: {
     type: String,
     default: ''
+  },
+  // 新增的评论系统props
+  isCommentSystem: {
+    type: Boolean,
+    default: false
+  },
+  comments: {
+    type: Array,
+    default: () => []
+  },
+  totalCommentCount: {
+    type: Number,
+    default: 0
   }
 })
 
-const emit = defineEmits(['reply-success', 'delete-success'])
+const emit = defineEmits(['reply-success', 'delete-success', 'comment-update'])
 
 // 响应式数据
 const showReplyForm = ref(false)
@@ -193,9 +268,13 @@ const replyContent = ref('')
 const replyLoading = ref(false)
 const replyTarget = ref(null) // 当前回复的目标
 
+// 评论系统相关的响应式数据
+const newComment = ref('')
+const newCommentLoading = ref(false)
+
 // 计算属性
 const canDelete = computed(() => {
-  if (!props.currentUser) return false
+  if (!props.currentUser || !props.comment) return false
   return (
     props.currentUser.role === 'admin' ||
     props.comment.user_id === props.currentUser.id
@@ -204,13 +283,39 @@ const canDelete = computed(() => {
 
 // 判断主评论用户是否为管理员
 const isCommentUserAdmin = computed(() => {
-  return props.comment.role === 'admin'
+  return props.comment?.role === 'admin'
 })
 
 // 判断当前登录用户是否为管理员（用于回复表单）
 const isCurrentUserAdmin = computed(() => {
   return props.currentUser?.role === 'admin'
 })
+
+// 评论系统相关方法
+const submitNewComment = async () => {
+  if (!newComment.value.trim()) return
+
+  newCommentLoading.value = true
+  try {
+    await addComment({
+      postId: props.postId,
+      content: newComment.value.trim()
+    })
+
+    ElMessage.success('发送成功')
+    newComment.value = ''
+    emit('comment-update')
+  } catch (error) {
+    console.error('发送失败:', error)
+    ElMessage.error('发送失败')
+  } finally {
+    newCommentLoading.value = false
+  }
+}
+
+const handleCommentUpdate = () => {
+  emit('comment-update')
+}
 
 // 判断回复用户是否为管理员
 const isReplyUserAdmin = (reply) => {
@@ -356,6 +461,114 @@ const deleteReply = async (reply) => {
 </script>
 
 <style lang="scss" scoped>
+// 评论系统样式
+.comment-system {
+  .comments-header {
+    h3 {
+      margin: 0 0 20px 20px;
+      color: #303133;
+
+      .comment-count {
+        font-size: 14px;
+        color: #909399;
+        font-weight: 400;
+        margin-left: 8px;
+      }
+    }
+  }
+
+  .comment-form {
+    margin-bottom: 15px;
+
+    .comment-input-wrapper {
+      display: flex;
+      align-items: flex-start;
+      margin-left: 20px;
+      gap: 20px;
+
+      .el-input {
+        flex: 1;
+      }
+
+      .user-avatar-wrapper {
+        flex-shrink: 0;
+
+        .avatar-container {
+          position: relative;
+          display: inline-block;
+
+          .admin-badge {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            background: #ff69b4;
+            color: white;
+            font-size: 8px;
+            font-weight: bold;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          }
+        }
+      }
+    }
+
+    :deep(.el-textarea__inner) {
+      resize: none;
+      min-height: 40px !important;
+      width: 93%;
+      line-height: 1.6;
+      padding: 8px 15px;
+    }
+
+    .form-actions {
+      margin: 15px 40px;
+      display: flex;
+      justify-content: flex-end;
+
+      .submit-btn {
+        background-color: #909399;
+        border-color: #909399;
+        color: white;
+
+        &:hover {
+          background-color: white;
+          border-color: #909399;
+          color: #909399;
+        }
+
+        &:disabled {
+          background-color: #c0c4cc;
+          border-color: #c0c4cc;
+          color: white;
+          cursor: default;
+
+          &:hover {
+            background-color: #c0c4cc;
+            border-color: #c0c4cc;
+            color: white;
+          }
+        }
+      }
+    }
+  }
+
+  .comments-list {
+    .empty-comments {
+      text-align: center;
+      color: #909399;
+      padding: 40px 0;
+      font-size: 14px;
+    }
+  }
+}
+
+// 原有的单个评论项样式
 .comment-item {
   padding: 16px 10px;
   border-bottom: 1px solid #bec2cc;

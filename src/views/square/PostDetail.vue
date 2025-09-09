@@ -9,8 +9,7 @@ import {
   likePost,
   unlikePost,
   deletePost,
-  getCommentList,
-  addComment
+  getCommentList
 } from '@/api/square'
 import { formatDetailTime } from '@/utils/format'
 import CommentItem from './components/CommentItem.vue'
@@ -23,8 +22,6 @@ const userStore = useUserStore()
 const loading = ref(false)
 const post = ref(null)
 const comments = ref([])
-const newComment = ref('')
-const commentLoading = ref(false)
 const showBackToTop = ref(false)
 
 // 计算属性
@@ -38,11 +35,6 @@ const canDelete = computed(() => {
 // 判断帖子作者是否为管理员
 const isPostAuthorAdmin = computed(() => {
   return post.value?.role === 'admin'
-})
-
-// 判断当前登录用户是否为管理员（用于评论表单）
-const isCurrentUserAdmin = computed(() => {
-  return userStore.user?.role === 'admin'
 })
 
 onMounted(async () => {
@@ -174,28 +166,6 @@ const handleCommand = (command) => {
     // 可以在这里添加更多操作选项
     default:
       break
-  }
-}
-
-// 提交评论
-const submitComment = async () => {
-  if (!newComment.value.trim()) return
-
-  commentLoading.value = true
-  try {
-    await addComment({
-      postId: route.params.id,
-      content: newComment.value.trim()
-    })
-
-    ElMessage.success('发送成功')
-    newComment.value = ''
-    handleCommentUpdate()
-  } catch (error) {
-    console.error('发送失败:', error)
-    ElMessage.error('发送失败')
-  } finally {
-    commentLoading.value = false
   }
 }
 
@@ -512,69 +482,18 @@ const formatContent = (content) => {
           ></div>
         </div>
 
-        <!-- 评论区域 -->
-        <div class="comments-section">
-          <div class="comments-header">
-            <h3>
-              评论
-              <span v-if="comments.length > 0" class="comment-count">
-                ({{ post.comment_count }})
-              </span>
-            </h3>
-          </div>
-
-          <!-- 发表评论 -->
-          <div class="comment-form">
-            <div class="comment-input-wrapper">
-              <div class="user-avatar-wrapper">
-                <div class="avatar-container">
-                  <el-avatar
-                    :src="userStore.user?.user_pic || '/src/assets/avatar.png'"
-                    :size="40"
-                  />
-                  <div v-if="isCurrentUserAdmin" class="admin-badge">大</div>
-                </div>
-              </div>
-              <el-input
-                v-model="newComment"
-                type="textarea"
-                :autosize="{ minRows: 1, maxRows: 6 }"
-                placeholder="写下你的想法..."
-              />
-            </div>
-            <div class="form-actions">
-              <el-button
-                @click="submitComment"
-                :loading="commentLoading"
-                :disabled="!newComment.trim()"
-                class="submit-btn"
-              >
-                发布
-              </el-button>
-            </div>
-          </div>
-
-          <!-- 评论列表 -->
-          <div class="comments-list">
-            <div v-if="comments.length === 0" class="empty-comments">
-              暂无评论，快来发表布一个评论吧~
-            </div>
-            <div v-else class="comments-container">
-              <comment-item
-                v-for="comment in comments"
-                :key="comment.id"
-                :comment="comment"
-                :post-id="route.params.id"
-                :current-user="userStore.user"
-                :current-user-avatar="
-                  userStore.user?.user_pic || '/src/assets/avatar.png'
-                "
-                @reply-success="handleCommentUpdate"
-                @delete-success="handleCommentUpdate"
-              />
-            </div>
-          </div>
-        </div>
+        <!-- 评论系统 -->
+        <comment-item
+          :is-comment-system="true"
+          :post-id="route.params.id"
+          :comments="comments"
+          :total-comment-count="post.comment_count"
+          :current-user="userStore.user"
+          :current-user-avatar="
+            userStore.user?.user_pic || '/src/assets/avatar.png'
+          "
+          @comment-update="handleCommentUpdate"
+        />
       </div>
 
       <!-- 帖子不存在 -->
@@ -1195,113 +1114,6 @@ const formatContent = (content) => {
 
         .el-icon {
           font-size: 16px;
-        }
-      }
-    }
-  }
-
-  .comments-section {
-    .comments-header {
-      h3 {
-        margin: 0 0 20px 20px;
-        color: #303133;
-
-        .comment-count {
-          font-size: 14px;
-          color: #909399;
-          font-weight: 400;
-          margin-left: 8px;
-        }
-      }
-    }
-
-    .comments-list {
-      .empty-comments {
-        text-align: center;
-        color: #909399;
-        padding: 40px 0;
-        font-size: 14px;
-      }
-    }
-
-    .comment-form {
-      margin-bottom: 15px;
-
-      .comment-input-wrapper {
-        display: flex;
-        align-items: flex-start;
-        margin-left: 20px;
-        gap: 20px;
-
-        .el-input {
-          flex: 1;
-        }
-
-        .user-avatar-wrapper {
-          flex-shrink: 0;
-
-          .avatar-container {
-            position: relative;
-            display: inline-block;
-
-            .admin-badge {
-              position: absolute;
-              bottom: -2px;
-              right: -2px;
-              background: #ff69b4;
-              color: white;
-              font-size: 8px;
-              font-weight: bold;
-              width: 14px;
-              height: 14px;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              border: 1.5px solid white;
-              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            }
-          }
-        }
-      }
-
-      :deep(.el-textarea__inner) {
-        resize: none;
-        min-height: 40px !important;
-        width: 93%;
-        line-height: 1.6;
-        padding: 8px 15px;
-      }
-
-      .form-actions {
-        margin: 15px 40px;
-        display: flex;
-        justify-content: flex-end;
-
-        .submit-btn {
-          background-color: #6c6e74;
-          border-color: #909399;
-          color: #fff;
-          transition: background 0.2s, color 0.2s;
-
-          &:hover {
-            background-color: #575555;
-            color: #ffffff;
-            border-color: #909399;
-          }
-
-          &:disabled {
-            background-color: #c0c4cc;
-            border-color: #c0c4cc;
-            color: #fff;
-            cursor: default;
-
-            &:hover {
-              background-color: #b2b4b8;
-              border-color: #c0c4cc;
-              color: white;
-            }
-          }
         }
       }
     }
