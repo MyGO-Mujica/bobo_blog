@@ -821,6 +821,32 @@ defineExpose({
   justify-content: flex-end;
   width: 100%;
   margin-top: 20px;
+
+  :deep(.el-button--primary) {
+    background-color: #6c6e74;
+    border-color: #909399;
+    color: #fff;
+    transition: background 0.2s, color 0.2s;
+
+    &:hover:not(:disabled) {
+      background-color: #575555;
+      color: #ffffff;
+      border-color: #909399;
+    }
+
+    &:disabled {
+      background-color: #c0c4cc;
+      border-color: #c0c4cc;
+      color: #fff;
+      cursor: default;
+
+      &:hover {
+        background-color: #b2b4b8;
+        border-color: #c0c4cc;
+        color: white;
+      }
+    }
+  }
 }
 
 // 表单样式优化
