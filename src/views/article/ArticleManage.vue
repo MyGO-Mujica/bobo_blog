@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { Delete, Edit, Picture, Share } from '@element-plus/icons-vue'
+import { Delete, Edit, Picture, Position } from '@element-plus/icons-vue'
 import ChannelSelect from './components/ChannelSelect.vue'
 import ArticleEdit from './components/ArticleEdit.vue'
 import {
@@ -562,9 +562,10 @@ const renderEditorContent = (content) => {
               plain
               size="small"
               type="success"
-              :icon="Share"
+              :icon="Position"
               @click="onShareArticle(row)"
               title="分享到广场"
+              class="share-button"
             />
             <el-button
               circle
@@ -818,6 +819,20 @@ const renderEditorContent = (content) => {
   display: flex;
   gap: 4px;
   justify-content: center;
+
+  // 自定义分享按钮样式
+  .share-button {
+    background-color: #97aa97 !important;
+    border-color: #ccecbd !important;
+    color: #fff !important;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background-color: #fafafae1 !important;
+      border-color: #699769 !important;
+      color: #adc5a1 !important;
+    }
+  }
 }
 
 // 分享对话框样式
