@@ -191,11 +191,13 @@ const editorConfig = {
     blocks: []
   },
   onChange: async () => {
-    // 当编辑器内容改变时触发表单验证和字数统计
-    await updateContentLength()
-    nextTick(() => {
-      formRef.value?.validateField('content')
-    })
+    try {
+      // 当编辑器内容改变时只触发字数统计，不触发表单验证
+      await updateContentLength()
+      // 移除表单验证，避免在输入过程中频繁触发验证错误
+    } catch (error) {
+      console.error('Editor onChange error:', error)
+    }
   }
 }
 
@@ -306,6 +308,11 @@ const validateCoverImg = (rule, value, callback) => {
 // 自定义验证器：验证文章内容
 const validateContent = async (rule, value, callback) => {
   try {
+    if (!editorInstance) {
+      callback(new Error('请输入文章内容'))
+      return
+    }
+
     const content = await getEditorContent()
     if (!content) {
       callback(new Error('请输入文章内容'))
@@ -318,7 +325,7 @@ const validateContent = async (rule, value, callback) => {
       return
     }
 
-    // 直接使用当前的字数统计值
+    // 使用当前的字数统计值
     const currentLength = contentLength.value
 
     if (currentLength < 10) {
@@ -329,6 +336,7 @@ const validateContent = async (rule, value, callback) => {
       callback()
     }
   } catch (error) {
+    console.error('内容验证错误:', error)
     callback(new Error('请输入文章内容'))
   }
 }
@@ -343,7 +351,33 @@ const contentLength = ref(0)
 // 辅助函数：移除HTML标签并计算文本长度
 const getTextLength = (text) => {
   if (!text) return 0
-  return text.replace(/<[^>]*>/g, '').trim().length
+
+  // 移除HTML标签
+  let cleanText = text.replace(/<[^>]*>/g, '')
+
+  // 将HTML实体和特殊字符转换为普通字符
+  cleanText = cleanText
+    .replace(/&nbsp;/g, ' ') // HTML非换行空格
+    .replace(/\u00A0/g, ' ') // Unicode非换行空格
+    .replace(/\u2009/g, ' ') // 细空格
+    .replace(/\u200A/g, ' ') // 毛细空格
+    .replace(/\u2002/g, ' ') // en空格
+    .replace(/\u2003/g, ' ') // em空格
+    .replace(/\u2007/g, ' ') // 数字空格
+    .replace(/\u2008/g, ' ') // 标点空格
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&hellip;/g, '…')
+
+  // 将多个连续的空白字符标准化为单个空格
+  cleanText = cleanText.replace(/\s+/g, ' ')
+
+  // 不要使用trim()，保留空格计数
+
+  return cleanText.length
 }
 
 // 更新字数统计

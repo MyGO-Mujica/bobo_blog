@@ -337,7 +337,33 @@ const onSelectFile = (uploadFile) => {
 // 辅助函数：移除HTML标签并计算文本长度
 const getTextLength = (text) => {
   if (!text) return 0
-  return text.replace(/<[^>]*>/g, '').trim().length
+
+  // 移除HTML标签
+  let cleanText = text.replace(/<[^>]*>/g, '')
+
+  // 将HTML实体和特殊字符转换为普通字符
+  cleanText = cleanText
+    .replace(/&nbsp;/g, ' ') // HTML非换行空格
+    .replace(/\u00A0/g, ' ') // Unicode非换行空格
+    .replace(/\u2009/g, ' ') // 细空格
+    .replace(/\u200A/g, ' ') // 毛细空格
+    .replace(/\u2002/g, ' ') // en空格
+    .replace(/\u2003/g, ' ') // em空格
+    .replace(/\u2007/g, ' ') // 数字空格
+    .replace(/\u2008/g, ' ') // 标点空格
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&hellip;/g, '…')
+
+  // 将多个连续的空白字符标准化为单个空格
+  cleanText = cleanText.replace(/\s+/g, ' ')
+
+  // 不要使用trim()，保留空格计数
+
+  return cleanText.length
 }
 
 // 更新字数统计
