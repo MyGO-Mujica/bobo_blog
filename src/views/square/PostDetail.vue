@@ -9,7 +9,8 @@ import {
   likePost,
   unlikePost,
   deletePost,
-  getCommentList
+  getCommentList,
+  addComment
 } from '@/api/square'
 import { formatDetailTime } from '@/utils/format'
 import CommentItem from './components/CommentItem.vue'
@@ -22,7 +23,16 @@ const userStore = useUserStore()
 const loading = ref(false)
 const post = ref(null)
 const comments = ref([])
+const newComment = ref('')
+const commentLoading = ref(false)
 const showBackToTop = ref(false)
+
+// 浮动评论表单相关
+const showFloatingCommentForm = ref(false)
+const floatingComment = ref('')
+const floatingCommentLoading = ref(false)
+const mainContentRef = ref(null)
+const originalCommentFormRef = ref(null)
 
 // 计算属性
 const canDelete = computed(() => {
@@ -35,6 +45,11 @@ const canDelete = computed(() => {
 // 判断帖子作者是否为管理员
 const isPostAuthorAdmin = computed(() => {
   return post.value?.role === 'admin'
+})
+
+// 判断当前登录用户是否为管理员（用于评论表单）
+const isCurrentUserAdmin = computed(() => {
+  return userStore.user?.role === 'admin'
 })
 
 onMounted(async () => {
@@ -90,6 +105,9 @@ const handleScroll = (event) => {
   }
 
   showBackToTop.value = scrollTop > 150
+
+  // 检查评论表单可见性
+  checkCommentFormVisibility()
 }
 
 // 加载帖子详情
@@ -167,6 +185,68 @@ const handleCommand = (command) => {
     default:
       break
   }
+}
+
+// 提交评论
+const submitComment = async () => {
+  if (!newComment.value.trim()) return
+
+  commentLoading.value = true
+  try {
+    await addComment({
+      postId: route.params.id,
+      content: newComment.value.trim()
+    })
+
+    ElMessage.success('发送成功')
+    newComment.value = ''
+    handleCommentUpdate()
+  } catch (error) {
+    console.error('发送失败:', error)
+    ElMessage.error('发送失败')
+  } finally {
+    commentLoading.value = false
+  }
+}
+
+// 浮动评论表单相关方法
+const submitFloatingComment = async () => {
+  if (!floatingComment.value.trim()) return
+
+  floatingCommentLoading.value = true
+  try {
+    await addComment({
+      postId: route.params.id,
+      content: floatingComment.value.trim()
+    })
+
+    ElMessage.success('发送成功')
+    floatingComment.value = ''
+    handleCommentUpdate()
+  } catch (error) {
+    console.error('发送失败:', error)
+    ElMessage.error('发送失败')
+  } finally {
+    floatingCommentLoading.value = false
+  }
+}
+
+// 检查评论表单可见性
+const checkCommentFormVisibility = () => {
+  if (!originalCommentFormRef.value) return
+
+  const commentForm = originalCommentFormRef.value
+  const elMain = document.querySelector('.el-main')
+
+  if (!commentForm || !elMain) return
+
+  const mainRect = elMain.getBoundingClientRect()
+  const formRect = commentForm.getBoundingClientRect()
+
+  // 如果原始评论表单完全滚出el-main容器视野，显示浮动表单
+  const isFormVisible =
+    formRect.bottom > mainRect.top && formRect.top < mainRect.bottom
+  showFloatingCommentForm.value = !isFormVisible
 }
 
 // 处理评论更新（新增/删除回复后）
@@ -426,7 +506,7 @@ const formatContent = (content) => {
     :title="post?.title || '帖子详情'"
     class="post-detail-container"
   >
-    <div v-loading="loading" class="post-detail">
+    <div v-loading="loading" class="post-detail" ref="mainContentRef">
       <div v-if="post" class="post-content">
         <!-- 帖子头部信息 -->
         <div class="post-header">
@@ -482,18 +562,108 @@ const formatContent = (content) => {
           ></div>
         </div>
 
-        <!-- 评论系统 -->
-        <comment-item
-          :is-comment-system="true"
-          :post-id="route.params.id"
-          :comments="comments"
-          :total-comment-count="post.comment_count"
-          :current-user="userStore.user"
-          :current-user-avatar="
-            userStore.user?.user_pic || '/src/assets/avatar.png'
-          "
-          @comment-update="handleCommentUpdate"
-        />
+        <!-- 评论区域 -->
+        <div class="comments-section">
+          <div class="comments-header">
+            <h3>
+              评论
+              <span v-if="comments.length > 0" class="comment-count">
+                ({{ post.comment_count }})
+              </span>
+            </h3>
+          </div>
+
+          <!-- 发表评论 -->
+          <div class="comment-form" ref="originalCommentFormRef">
+            <div class="comment-input-wrapper">
+              <div class="user-avatar-wrapper">
+                <div class="avatar-container">
+                  <el-avatar
+                    :src="userStore.user?.user_pic || '/src/assets/avatar.png'"
+                    :size="40"
+                  />
+                  <div v-if="isCurrentUserAdmin" class="admin-badge">大</div>
+                </div>
+              </div>
+              <el-input
+                v-model="newComment"
+                type="textarea"
+                :autosize="{ minRows: 1, maxRows: 6 }"
+                placeholder="写下你的想法..."
+              />
+            </div>
+            <div class="form-actions">
+              <el-button
+                @click="submitComment"
+                :loading="commentLoading"
+                :disabled="!newComment.trim()"
+                class="submit-btn"
+              >
+                发布
+              </el-button>
+            </div>
+          </div>
+
+          <!-- 评论列表 -->
+          <div class="comments-list">
+            <div v-if="comments.length === 0" class="empty-comments">
+              暂无评论，快来发表布一个评论吧~
+            </div>
+            <div v-else class="comments-container">
+              <comment-item
+                v-for="comment in comments"
+                :key="comment.id"
+                :comment="comment"
+                :post-id="route.params.id"
+                :current-user="userStore.user"
+                :current-user-avatar="
+                  userStore.user?.user_pic || '/src/assets/avatar.png'
+                "
+                @reply-success="handleCommentUpdate"
+                @delete-success="handleCommentUpdate"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- 浮动评论表单 - 位于帖子容器底部 -->
+        <div
+          class="floating-comment-form"
+          :class="{ 'floating-form-visible': showFloatingCommentForm }"
+          v-if="userStore.user"
+        >
+          <div class="floating-form-content">
+            <div class="comment-input-wrapper">
+              <div class="user-avatar-wrapper">
+                <div class="avatar-container">
+                  <el-avatar
+                    :src="userStore.user?.user_pic || '/src/assets/avatar.png'"
+                    :size="32"
+                  />
+                  <div v-if="isCurrentUserAdmin" class="admin-badge">大</div>
+                </div>
+              </div>
+              <el-input
+                v-model="floatingComment"
+                type="textarea"
+                :autosize="{ minRows: 2, maxRows: 4 }"
+                placeholder="写下你的想法..."
+              />
+            </div>
+
+            <div class="form-actions">
+              <el-button
+                @click="submitFloatingComment"
+                :loading="floatingCommentLoading"
+                :disabled="!floatingComment.trim()"
+                class="submit-btn"
+                size="small"
+              >
+                发布
+              </el-button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 帖子不存在 -->
@@ -560,6 +730,7 @@ const formatContent = (content) => {
 .post-detail-container {
   max-width: 720px;
   margin: 0 auto;
+  position: relative; /* 为浮动表单提供定位上下文 */
 
   :deep(.el-card__header) {
     border-bottom: none;
@@ -597,6 +768,7 @@ const formatContent = (content) => {
     // 确保内容占满容器宽度
     width: 100%;
     box-sizing: border-box;
+    position: relative; /* 为浮动评论表单提供定位上下文 */
   }
 
   .post-header {
@@ -1119,6 +1291,113 @@ const formatContent = (content) => {
     }
   }
 
+  .comments-section {
+    .comments-header {
+      h3 {
+        margin: 0 0 20px 20px;
+        color: #303133;
+
+        .comment-count {
+          font-size: 14px;
+          color: #909399;
+          font-weight: 400;
+          margin-left: 8px;
+        }
+      }
+    }
+
+    .comments-list {
+      .empty-comments {
+        text-align: center;
+        color: #909399;
+        padding: 40px 0;
+        font-size: 14px;
+      }
+    }
+
+    .comment-form {
+      margin-bottom: 15px;
+
+      .comment-input-wrapper {
+        display: flex;
+        align-items: flex-start;
+        margin-left: 20px;
+        gap: 20px;
+
+        .el-input {
+          flex: 1;
+        }
+
+        .user-avatar-wrapper {
+          flex-shrink: 0;
+
+          .avatar-container {
+            position: relative;
+            display: inline-block;
+
+            .admin-badge {
+              position: absolute;
+              bottom: -2px;
+              right: -2px;
+              background: #ff69b4;
+              color: white;
+              font-size: 8px;
+              font-weight: bold;
+              width: 14px;
+              height: 14px;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border: 1.5px solid white;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            }
+          }
+        }
+      }
+
+      :deep(.el-textarea__inner) {
+        resize: none;
+        min-height: 40px !important;
+        width: 93%;
+        line-height: 1.6;
+        padding: 8px 15px;
+      }
+
+      .form-actions {
+        margin: 15px 40px;
+        display: flex;
+        justify-content: flex-end;
+
+        .submit-btn {
+          background-color: #6c6e74;
+          border-color: #909399;
+          color: #fff;
+          transition: background 0.2s, color 0.2s;
+
+          &:hover {
+            background-color: #575555;
+            color: #ffffff;
+            border-color: #909399;
+          }
+
+          &:disabled {
+            background-color: #c0c4cc;
+            border-color: #c0c4cc;
+            color: #fff;
+            cursor: default;
+
+            &:hover {
+              background-color: #b2b4b8;
+              border-color: #c0c4cc;
+              color: white;
+            }
+          }
+        }
+      }
+    }
+  }
+
   .post-not-found {
     display: flex;
     justify-content: center;
@@ -1276,6 +1555,171 @@ const formatContent = (content) => {
 @media (max-width: 768px) {
   .side-toolbar {
     display: none;
+  }
+
+  .post-content {
+    padding: 16px; /* 移动端减少padding */
+  }
+}
+
+// 浮动评论表单样式 - 帖子容器内定位版本
+.floating-comment-form {
+  position: absolute;
+  bottom: 1px; /* 与post-content的padding保持一致 */
+  left: 24px;
+  right: 20px;
+  z-index: 100;
+  transform: translateY(100%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  // 确保在帖子容器内
+  box-sizing: border-box;
+
+  &.floating-form-visible {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .floating-form-content {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    border-radius: 12px 12px 0 0;
+    padding: 16px 20px 20px;
+    position: relative;
+    overflow: hidden;
+
+    // 渐变背景效果
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(244, 250, 255, 0.98) 100%
+    );
+
+    .comment-input-wrapper {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+
+      .user-avatar-wrapper {
+        flex-shrink: 0;
+
+        .avatar-container {
+          position: relative;
+          display: inline-block;
+
+          .admin-badge {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            background: #ff69b4;
+            color: white;
+            font-size: 8px;
+            font-weight: bold;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+          }
+        }
+      }
+
+      .el-input {
+        flex: 1;
+      }
+
+      // 浮动表单的输入框样式
+      :deep(.el-textarea__inner) {
+        border: 1px solid #e4e7ed;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 14px;
+        line-height: 1.4;
+        resize: none;
+        transition: all 0.2s ease;
+
+        &:focus {
+          border-color: #b2c3c9;
+          box-shadow: 0 0 0 2px rgba(199, 210, 214, 0.1);
+        }
+
+        &::placeholder {
+          color: #c0c4cc;
+          font-size: 13px;
+        }
+      }
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+
+      .el-button {
+        font-size: 13px;
+        padding: 6px 16px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+
+        &.submit-btn {
+          background-color: #6c6e74;
+          border-color: #909399;
+          color: #fff;
+          transition: background 0.2s, color 0.2s;
+
+          &:hover:not(:disabled) {
+            background-color: #575555;
+            color: #ffffff;
+            border-color: #909399;
+          }
+
+          &:disabled {
+            background-color: #c0c4cc;
+            border-color: #c0c4cc;
+            color: #fff;
+            cursor: default;
+
+            &:hover {
+              background-color: #b2b4b8;
+              border-color: #c0c4cc;
+              color: white;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 响应式设计
+  @media (max-width: 768px) {
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+
+    .floating-form-content {
+      padding: 12px 16px 16px;
+
+      .comment-input-wrapper {
+        gap: 8px;
+
+        .user-avatar-wrapper .el-avatar {
+          --el-avatar-size: 28px;
+        }
+      }
+
+      .form-actions .el-button {
+        font-size: 12px;
+        padding: 5px 12px;
+      }
+    }
   }
 }
 </style>
