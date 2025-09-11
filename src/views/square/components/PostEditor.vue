@@ -1,79 +1,3 @@
-<template>
-  <el-drawer
-    v-model="visibleDrawer"
-    title="发布帖子"
-    direction="rtl"
-    size="50%"
-    :before-close="handleClose"
-  >
-    <el-form
-      ref="formRef"
-      :model="formModel"
-      :rules="rules"
-      label-width="100px"
-    >
-      <el-form-item label="帖子标题" prop="title">
-        <el-input
-          v-model="formModel.title"
-          placeholder="请输入帖子标题"
-          maxlength="50"
-          show-word-limit
-          clearable
-        />
-      </el-form-item>
-
-      <el-form-item label="帖子封面" prop="cover_img">
-        <div class="upload-container">
-          <el-upload
-            class="avatar-uploader"
-            :show-file-list="false"
-            :auto-upload="false"
-            :on-change="onSelectFile"
-            accept="image/jpeg,image/jpg,image/png,image/webp"
-            drag
-          >
-            <img v-if="imgUrl" :src="imgUrl" class="avatar" />
-            <div v-else class="upload-placeholder">
-              <el-icon class="avatar-uploader-icon"><Plus /></el-icon>
-              <div class="upload-text">
-                <p>点击或拖拽图片到此处上传</p>
-                <p class="upload-tip">
-                  支持 JPG、PNG、WEBP 格式，大小不超过 5MB
-                </p>
-              </div>
-            </div>
-          </el-upload>
-        </div>
-      </el-form-item>
-
-      <el-form-item label="帖子内容" prop="content">
-        <div class="editor-container">
-          <div class="editor-header">
-            <span class="word-count">字数: {{ contentLength }}</span>
-          </div>
-          <div class="editor">
-            <div id="editorjs-container" class="editorjs-container"></div>
-          </div>
-        </div>
-      </el-form-item>
-
-      <el-form-item>
-        <div class="submit-buttons">
-          <el-button
-            @click="onPublish"
-            type="primary"
-            :loading="submitLoading"
-            :disabled="contentLength === 0"
-          >
-            {{ submitLoading ? '发布中...' : '发布帖子' }}
-          </el-button>
-          <el-button @click="visibleDrawer = false">取消</el-button>
-        </div>
-      </el-form-item>
-    </el-form>
-  </el-drawer>
-</template>
-
 <script setup>
 import { ref, nextTick, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -605,6 +529,82 @@ defineExpose({
   open
 })
 </script>
+
+<template>
+  <el-drawer
+    v-model="visibleDrawer"
+    title="发布帖子"
+    direction="rtl"
+    size="50%"
+    :before-close="handleClose"
+  >
+    <el-form
+      ref="formRef"
+      :model="formModel"
+      :rules="rules"
+      label-width="100px"
+    >
+      <el-form-item label="帖子标题" prop="title">
+        <el-input
+          v-model="formModel.title"
+          placeholder="请输入帖子标题"
+          maxlength="50"
+          show-word-limit
+          clearable
+        />
+      </el-form-item>
+
+      <el-form-item label="帖子封面" prop="cover_img">
+        <div class="upload-container">
+          <el-upload
+            class="avatar-uploader"
+            :show-file-list="false"
+            :auto-upload="false"
+            :on-change="onSelectFile"
+            accept="image/jpeg,image/jpg,image/png,image/webp"
+            drag
+          >
+            <img v-if="imgUrl" :src="imgUrl" class="avatar" />
+            <div v-else class="upload-placeholder">
+              <el-icon class="avatar-uploader-icon"><Plus /></el-icon>
+              <div class="upload-text">
+                <p>点击或拖拽图片到此处上传</p>
+                <p class="upload-tip">
+                  支持 JPG、PNG、WEBP 格式，大小不超过 5MB
+                </p>
+              </div>
+            </div>
+          </el-upload>
+        </div>
+      </el-form-item>
+
+      <el-form-item label="帖子内容" prop="content">
+        <div class="editor-container">
+          <div class="editor-header">
+            <span class="word-count">字数: {{ contentLength }}</span>
+          </div>
+          <div class="editor">
+            <div id="editorjs-container" class="editorjs-container"></div>
+          </div>
+        </div>
+      </el-form-item>
+
+      <el-form-item>
+        <div class="submit-buttons">
+          <el-button
+            @click="onPublish"
+            type="primary"
+            :loading="submitLoading"
+            :disabled="contentLength === 0"
+          >
+            {{ submitLoading ? '发布中...' : '发布帖子' }}
+          </el-button>
+          <el-button @click="visibleDrawer = false">取消</el-button>
+        </div>
+      </el-form-item>
+    </el-form>
+  </el-drawer>
+</template>
 
 <style lang="scss" scoped>
 // 封面上传样式
